@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { LanguageProvider } from "@/components/language-provider"
 import { FeedbackProvider } from "@/components/feedback"
+import { en } from "@/lib/i18n/en"
+import { siteUrl } from "@/lib/site"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -15,8 +17,13 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Finance Tracker",
-  description: "Record and monitor your personal finances.",
+  metadataBase: siteUrl,
+  applicationName: "Finance Tracker",
+  title: {
+    default: en.seoTitle,
+    template: "%s | Finance Tracker",
+  },
+  description: en.seoDescription,
 }
 
 export default function RootLayout({

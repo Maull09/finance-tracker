@@ -632,6 +632,10 @@ export const en = {
   unauthorized: "Your session has ended. Sign in again to continue.",
   forbidden: "This request is not allowed.",
   landingTitle: "Make your next money decision clearer.",
+  seoTitle: "Finance Tracker | Personal finance in IDR",
+  seoDescription:
+    "Track income, expenses, and account balances in IDR. Manage budgets, savings goals, debts, and monthly reports with Finance Tracker.",
+  seoImageAlt: "Finance Tracker: track your money, manage budgets, and plan financial goals in IDR.",
   landingDescription:
     "Track every rupiah, understand your spending, and plan ahead with accounts, budgets, and goals in one place.",
   landingExplore: "See how it works",
