@@ -127,6 +127,13 @@ npm run db:check
 
 `db:generate` creates a Drizzle migration after a schema change. `db:migrate` applies existing migrations and verifies required schema objects. `db:check` is read-only. Back up financial data before applying a migration; see the [migration and recovery guide](database-migrations.md) if existing tables have no migration history.
 
+The Verify workflow supplies dummy loopback database and Supabase values only
+for its build step. Next.js imports server modules while collecting route
+configuration, so `DATABASE_URL` must be present even though the build does not
+query the database. CI does not need production secrets or running services for
+this check. Deployment builds require the real environment values above;
+the CI artifact is not configured for deployment.
+
 ## Database
 
 Drizzle schema definitions are in `src/db/schema.ts`; generated migrations are in `drizzle/`. The first migration preserves legacy transactions by assigning them to an `Uncategorized account`. Move them to their real account after migrating.
@@ -144,6 +151,6 @@ Switching daily prices from Twelve Data to Yahoo Finance requires updated npm de
 - **Cannot connect to the database:** verify that `DATABASE_URL` comes from Supabase Connect, is URL-encoded where required, and uses SSL. For a project CA that is not in the host trust store, set `DATABASE_CA_CERT` to the PEM value from Supabase; multiline, escaped `\n`, and single-line PEM values are supported.
 - **Missing `stock_trades`:** run `npm run db:migrate -- --check`, then follow the [migration and recovery guide](database-migrations.md). Successful account queries do not prove that all feature tables exist.
 - **Migration fails:** make sure the connection targets the intended database. Use Direct connection or the Session pooler for migration work. Do not force schema pushes, drop application tables, or invent migration history to suppress an error.
-- **Build fails:** run `npm install`, then retry `npm run build`.
+- **Build fails with `DATABASE_URL is missing`:** configure the environment values above before building. The Verify workflow uses build-only placeholders; do not use them for a deployment.
 - **Lint fails:** run `npm run lint` to identify the reported source file and rule. Next.js 16 uses the ESLint CLI rather than `next lint`.
 - **Tests fail:** run `npm test` to identify the failed financial scenario.
