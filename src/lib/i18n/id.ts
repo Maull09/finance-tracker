@@ -632,6 +632,10 @@ export const id: Record<keyof typeof en, string> = {
   unauthorized: "Sesi Anda telah berakhir. Masuk kembali untuk melanjutkan.",
   forbidden: "Permintaan ini tidak diizinkan.",
   landingTitle: "Kelola uang dengan lebih tenang.",
+  seoTitle: "Finance Tracker | Catatan keuangan pribadi dalam IDR",
+  seoDescription:
+    "Catat pemasukan, pengeluaran, dan saldo akun dalam IDR. Kelola anggaran, tujuan tabungan, utang, dan laporan bulanan dengan Finance Tracker.",
+  seoImageAlt: "Finance Tracker: catat uang, kelola anggaran, dan rencanakan tujuan keuangan dalam IDR.",
   landingDescription:
     "Catat setiap rupiah, pahami pengeluaran, dan rencanakan langkah berikutnya dengan akun, anggaran, serta tujuan dalam satu tempat.",
   landingExplore: "Lihat cara kerjanya",

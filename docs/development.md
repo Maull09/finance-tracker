@@ -20,6 +20,28 @@ Use the **Transaction pooler** URL for serverless deployments. Use the **Direct 
 
 The two `NEXT_PUBLIC_SUPABASE_*` values come from the same project's API settings and are intentionally public. Never use a secret/service-role key in their place. Set them before building, since Next.js embeds public variables into the client bundle. See [authentication setup](authentication.md) for email confirmation, ownership migration, and session verification.
 
+## Public-page SEO
+
+Before a public deployment, set the server-only `SITE_URL` to the site's canonical
+HTTPS origin, for example `SITE_URL=https://finance.example.com`, without a path,
+query, or fragment. Set it before `npm run build` and rebuild when the domain
+changes. It supplies the homepage canonical URL, absolute Open Graph/Twitter
+image URLs, and `/sitemap.xml`. Without it, these URLs are omitted and the
+sitemap is empty, so local builds do not advertise a guessed production domain.
+
+Only the landing page belongs in the sitemap. Sign-in, sign-up, dashboard, auth,
+and API responses use `X-Robots-Tag: noindex, nofollow`; account and dashboard
+pages also include robots metadata. `/robots.txt` allows crawlers to read the
+page-level `noindex` rules and skips API/auth endpoints. Authentication continues
+to control access to private data.
+
+Metadata uses English to match the initial server-rendered HTML. English and
+Indonesian SEO copy lives in `src/lib/i18n/`; the saved language preference
+remains client-side and does not create separate language URLs or `hreflang`
+alternates. After changing preview copy, regenerate the static branded image
+with `npx tsx scripts/generate-social-preview.tsx`. Its local Geist font and
+license live in `src/assets/fonts/`.
+
 ## Automatic AI insight worker
 
 Automatic page insights use BullMQ with a separate Redis instance and a long-running Node worker. The cache Redis below uses eviction and is unsuitable for a job queue. Start the persistent queue with Docker Desktop running:

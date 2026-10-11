@@ -4,6 +4,18 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  async headers() {
+    return [
+      "/dashboard/:path*",
+      "/sign-in",
+      "/sign-up",
+      "/auth/:path*",
+      "/api/:path*",
+    ].map((source) => ({
+      source,
+      headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+    }))
+  },
 }
 
 export default nextConfig
