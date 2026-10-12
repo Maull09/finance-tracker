@@ -2,12 +2,14 @@ import { claimConversation, readConversation, releaseConversation, saveReply } f
 import { runChat } from "@/lib/ai/graph"
 import { aiResponse, readAiJson } from "@/lib/ai/server"
 import { chatSchema } from "@/lib/ai/validation"
+import { requireOllamaEnabled } from "@/lib/server/service-config"
 
 export const runtime = "nodejs"
 export const maxDuration = 180
 
 export async function POST(request: Request) {
   return aiResponse(request, async ({ userId }) => {
+    requireOllamaEnabled()
     const input = chatSchema.parse(await readAiJson(request))
     const claim = await claimConversation(userId, input.conversationId, input.message)
     try {

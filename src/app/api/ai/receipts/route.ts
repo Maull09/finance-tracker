@@ -5,6 +5,7 @@ import { runReceipt } from "@/lib/ai/graph"
 import { aiResponse, readBoundedBody, userDatabase } from "@/lib/ai/server"
 import { MAX_RECEIPT_BYTES, RECEIPT_BUCKET, receiptMimeType } from "@/lib/ai/validation"
 import { FinanceError } from "@/lib/finance-errors"
+import { requireOllamaEnabled } from "@/lib/server/service-config"
 
 export const runtime = "nodejs"
 export const maxDuration = 180
@@ -22,6 +23,7 @@ async function readReceiptForm(request: Request) {
 
 export async function POST(request: Request) {
   return aiResponse(request, async ({ userId, supabase }) => {
+    requireOllamaEnabled()
     const form = await readReceiptForm(request)
     const conversationId = z.uuid().parse(form.get("conversationId"))
     const locale = z.enum(["en", "id"]).parse(form.get("locale"))

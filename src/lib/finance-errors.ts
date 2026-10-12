@@ -1,4 +1,5 @@
 export const financeErrorCodes = [
+  "aiDisabled",
   "aiNotConfigured",
   "aiUnavailable",
   "aiInvalidResponse",

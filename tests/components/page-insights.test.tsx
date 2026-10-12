@@ -97,6 +97,15 @@ describe("automatic page insights", () => {
     expect(mocks.request).toHaveBeenCalledOnce()
     expect(container.querySelector("button")?.disabled).toBe(false)
   })
+  it.each(["en", "id"] as const)("explains disabled AI in %s and stops polling", async (locale) => {
+    mocks.locale = locale
+    mocks.request.mockRejectedValueOnce(new Error("aiDisabled"))
+    await mount(); await advance(600)
+    expect(container.textContent).toContain(messages[locale].aiDisabled)
+    expect(container.querySelector('[aria-busy="false"]')).not.toBeNull()
+    await advance(10000)
+    expect(mocks.request).toHaveBeenCalledOnce()
+  })
   it("announces active analysis and keeps reanalysis disabled until completion", async () => {
     mocks.request.mockResolvedValueOnce({ jobId: "job", status: "active" }).mockResolvedValueOnce(completed)
     await mount(); await advance(600)

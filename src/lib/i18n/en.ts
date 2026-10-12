@@ -805,6 +805,7 @@ export const en = {
   aiHistoryHint: "Showing the latest 50 conversations and 100 messages per conversation.",
   aiNoAccounts: "Add an account before confirming a transaction.",
   aiLocal: "Local AI",
+  aiDisabled: "AI is currently disabled. You can still record transactions manually.",
   aiNotConfigured: "The assistant is not configured. Set the Ollama model and URL on the server.",
   aiUnavailable: "The assistant could not reply. Check the Ollama connection and try again.",
   aiInvalidResponse:

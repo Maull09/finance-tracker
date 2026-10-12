@@ -1,5 +1,5 @@
 import { AIMessage } from "@langchain/core/messages"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const mocks = vi.hoisted(() => ({ invoke: vi.fn(), revision: vi.fn(), summary: vi.fn(), database: vi.fn(), insert: vi.fn(), values: vi.fn(), save: vi.fn(), update: vi.fn(), inTransaction: false }))
 vi.mock("@/lib/ai/model", () => ({ ollamaModel: () => ({ invoke: mocks.invoke }) }))
@@ -12,6 +12,8 @@ import type { InsightJob } from "@/lib/ai/insight-queue"
 describe("contextual insight worker", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubEnv("REDIS_ENABLED", undefined)
+    vi.stubEnv("OLLAMA_ENABLED", undefined)
     mocks.database.mockImplementation(async (_user, action) => {
       mocks.inTransaction = true
       try { return await action({ insert: mocks.insert }) } finally { mocks.inTransaction = false }
@@ -25,7 +27,15 @@ describe("contextual insight worker", () => {
       return new AIMessage("Pengeluaran tercatat Rp500.000. Tinjau anggaran Anda.")
     })
   })
+  afterEach(() => vi.unstubAllEnvs())
   const job = () => ({ id: "a".repeat(64), data: { userId: "alice", context: { page: "dashboard" }, locale: "id", revision: "r1", requestedAt: Date.now() } }) as unknown as InsightJob
+  it.each(["REDIS_ENABLED", "OLLAMA_ENABLED"])("does not read financial data or infer queued jobs when %s is false", async (flag) => {
+    vi.stubEnv(flag, "false")
+    await expect(processPageInsight(job())).rejects.toMatchObject({ code: "aiDisabled", status: 503 })
+    expect(mocks.database).not.toHaveBeenCalled()
+    expect(mocks.invoke).not.toHaveBeenCalled()
+    expect(mocks.insert).not.toHaveBeenCalled()
+  })
   it("uses only aggregates, releases the database during inference and saves an idempotent history entry", async () => {
     const first = await processPageInsight(job())
     const second = await processPageInsight(job())

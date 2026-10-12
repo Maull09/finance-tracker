@@ -807,6 +807,7 @@ export const id: Record<keyof typeof en, string> = {
   aiHistoryHint: "Menampilkan 50 percakapan terbaru dan 100 pesan per percakapan.",
   aiNoAccounts: "Tambahkan akun sebelum mengonfirmasi transaksi.",
   aiLocal: "AI lokal",
+  aiDisabled: "AI sedang dinonaktifkan. Anda tetap bisa mencatat transaksi secara manual.",
   aiNotConfigured: "Asisten belum dikonfigurasi. Atur model dan URL Ollama di server.",
   aiUnavailable: "Asisten belum bisa menjawab. Periksa koneksi Ollama lalu coba lagi.",
   aiInvalidResponse: "Hasil asisten belum lengkap. Coba lagi atau catat transaksi secara manual.",
