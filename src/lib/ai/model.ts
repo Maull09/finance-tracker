@@ -1,7 +1,9 @@
 import { ChatOpenAI } from "@langchain/openai"
 import { FinanceError } from "@/lib/finance-errors"
+import { requireOllamaEnabled } from "@/lib/server/service-config"
 
 export function ollamaModel() {
+  requireOllamaEnabled()
   const baseURL = process.env.OLLAMA_BASE_URL
   const model = process.env.OLLAMA_MODEL
   if (!baseURL || !model) throw new FinanceError("aiNotConfigured", 503)

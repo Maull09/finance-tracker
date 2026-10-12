@@ -5,6 +5,7 @@ import { db } from "@/db"
 import { createClient } from "@/lib/supabase/server"
 import { financeResponse } from "@/lib/api-response"
 import { apiCacheKey, readApiCache, writeApiCache } from "./api-cache"
+import { redisEnabled } from "./service-config"
 
 export type UserDatabase = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
@@ -40,7 +41,7 @@ export async function authenticatedResponse(
           sql`select set_config('app.user_id', ${user.id}, true)`,
         )
         const key =
-          request?.method === "GET" && process.env.REDIS_URL
+          request?.method === "GET" && redisEnabled() && process.env.REDIS_URL
             ? await apiCacheKey(connection, user.id, request)
             : null
         if (key) {

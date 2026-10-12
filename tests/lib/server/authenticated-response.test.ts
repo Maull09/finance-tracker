@@ -24,6 +24,7 @@ import { authenticatedResponse } from "@/lib/server/authenticated-response"
 describe("authenticated financial boundary", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubEnv("REDIS_ENABLED", undefined)
     vi.stubEnv("REDIS_URL", "")
     state.headers = new Headers({ host: "localhost:3000" })
     state.getUser.mockResolvedValue({
@@ -84,6 +85,21 @@ describe("authenticated financial boundary", () => {
     expect(response.headers.get("Cache-Control")).toBe("private, no-store")
     expect(state.cacheKey).toHaveBeenCalledWith(expect.anything(), "00000000-0000-4000-8000-000000000001", request)
     expect(action).not.toHaveBeenCalled()
+    expect(state.cacheWrite).not.toHaveBeenCalled()
+  })
+  it("reads live financial data without cache queries when Redis is disabled despite a configured URL", async () => {
+    vi.stubEnv("REDIS_ENABLED", "false")
+    vi.stubEnv("REDIS_URL", "redis://localhost:6379")
+    state.cacheRead.mockResolvedValue('{"balance":999}')
+    const action = vi.fn().mockResolvedValue(Response.json({ balance: 10 }))
+    const response = await authenticatedResponse(action, new Request("http://localhost:3000/api/dashboard"))
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ balance: 10 })
+    expect(response.headers.get("X-Finance-Cache")).toBe("BYPASS")
+    expect(action).toHaveBeenCalledOnce()
+    expect(state.execute).toHaveBeenCalledTimes(2)
+    expect(state.cacheKey).not.toHaveBeenCalled()
+    expect(state.cacheRead).not.toHaveBeenCalled()
     expect(state.cacheWrite).not.toHaveBeenCalled()
   })
   it("does not read cached financial data for an expired session", async () => {

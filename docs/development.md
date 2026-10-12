@@ -20,6 +20,36 @@ Use the **Transaction pooler** URL for serverless deployments. Use the **Direct 
 
 The two `NEXT_PUBLIC_SUPABASE_*` values come from the same project's API settings and are intentionally public. Never use a secret/service-role key in their place. Set them before building, since Next.js embeds public variables into the client bundle. See [authentication setup](authentication.md) for email confirmation, ownership migration, and session verification.
 
+### Redis and Ollama switches
+
+To deploy the core financial app without Redis or Ollama, set these server-only
+variables in `.env` or Vercel's Production environment:
+
+```env
+REDIS_ENABLED=false
+OLLAMA_ENABLED=false
+```
+
+Set either variable to `true` to enable that service's application features again.
+Use the exact values `true` and `false`. Unset variables retain the existing
+behavior: configured services are used, and missing connection values keep their
+existing unavailable/bypass behavior. Enabling a switch does not start or host a
+service; its connection values and service must still be configured.
+
+| Configuration | Behavior |
+| --- | --- |
+| `REDIS_ENABLED=false` | Bypass the financial-read cache and disable the page-insight queue, even if `REDIS_URL` and `INSIGHTS_REDIS_URL` are set. Financial requests read PostgreSQL directly. |
+| `OLLAMA_ENABLED=false` | Disable chat replies, receipt extraction, financial-health explanations, and automatic page insights before saving messages or uploading receipts. Saved conversation history and existing draft review/confirmation remain available. |
+| Both `true` | Use configured Redis and Ollama services. Automatic insights also require the separate running worker. |
+
+AI requests blocked by a switch return HTTP 503 with `aiDisabled`, translated
+into English and Indonesian. Redis is not required for chat or receipt extraction.
+Apply the same flags to the app and insight worker. Restart local processes or
+redeploy Vercel after changing them. The worker exits successfully without opening
+connections when either switch is `false`. Stop/restart any existing worker to
+apply new values. These flags control application usage; stop Docker containers
+or hosted services separately if you also want to shut those services down.
+
 ## Public-page SEO
 
 Before a public deployment, set the server-only `SITE_URL` to the site's canonical

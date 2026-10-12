@@ -11,6 +11,13 @@ OLLAMA_BASE_URL=http://localhost:11434/v1
 OLLAMA_MODEL=qwen3.5:9b
 ```
 
+Set `OLLAMA_ENABLED=false` to disable AI generation while retaining saved history
+and existing draft review. Set it to `true` to enable generation with the model
+and URL above. Redis is optional for chat and receipt extraction; automatic page
+insights require both services and their separate worker. See the
+[Redis and Ollama switches](development.md#redis-and-ollama-switches) for deployment
+configuration and restart behavior.
+
 The Next.js server must reach the configured Ollama host. If Ollama runs on another machine, use its LAN address in the ignored `.env`; a remote deployment needs connectivity to that network. The browser never connects to Ollama directly. No OpenAI account or API key is used. Keep LangSmith tracing disabled for private financial conversations.
 
 Install dependencies, then run `npm run db:migrate` and `npm run db:check`. Migration 0012 adds four AI tables with the repository's `finance_user` ownership policies and does not change existing financial rows.

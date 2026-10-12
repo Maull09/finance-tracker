@@ -1,4 +1,5 @@
 import { createClient } from "@redis/client"
+import { redisEnabled } from "./service-config"
 
 type RedisClient = ReturnType<typeof createClient>
 
@@ -6,6 +7,7 @@ let client: RedisClient | undefined
 let connecting: Promise<RedisClient> | undefined
 
 export async function getRedisClient() {
+  if (!redisEnabled()) return null
   const url = process.env.REDIS_URL
   if (!url) return null
 

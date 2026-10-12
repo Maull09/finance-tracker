@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm"
 import { getToday } from "@/lib/finance"
 import { FinanceError } from "@/lib/finance-errors"
 import type { UserDatabase } from "@/lib/server/authenticated-response"
+import { redisEnabled, requireOllamaEnabled } from "@/lib/server/service-config"
 import { canonicalInsightContext, type InsightContext, type InsightRequest, type InsightResult, type InsightStatus } from "./insight-contract"
 
 export const insightQueueName = "finance-page-insights-v1"
@@ -15,7 +16,13 @@ export type InsightJob = Job<InsightJobData, InsightResult | null>
 export type InsightQueue = Queue<InsightJobData, InsightResult | null>
 let queue: InsightQueue | undefined
 
+export function requireInsightsEnabled() {
+  requireOllamaEnabled()
+  if (!redisEnabled()) throw new FinanceError("aiDisabled", 503)
+}
+
 export function insightConnection(worker = false) {
+  requireInsightsEnabled()
   const url = process.env.INSIGHTS_REDIS_URL
   if (!url || !["redis:", "rediss:"].includes(new URL(url).protocol)) throw new FinanceError("aiNotConfigured", 503)
   return new IORedis(url, { lazyConnect: true, connectTimeout: 2000, maxRetriesPerRequest: worker ? null : 1,
@@ -23,6 +30,7 @@ export function insightConnection(worker = false) {
 }
 
 export function getInsightQueue() {
+  requireInsightsEnabled()
   if (!queue) {
     queue = new Queue<InsightJobData, InsightResult | null>(insightQueueName, {
       connection: insightConnection(), defaultJobOptions: {

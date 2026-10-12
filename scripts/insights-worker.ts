@@ -1,8 +1,13 @@
 import { Worker } from "bullmq"
 import { getInsightQueue, insightConnection, insightQueueName } from "../src/lib/ai/insight-queue"
-import { processPageInsight } from "../src/lib/ai/page-insights"
+import { ollamaEnabled, redisEnabled } from "../src/lib/server/service-config"
 
 async function main() {
+  if (!redisEnabled() || !ollamaEnabled()) {
+    console.log("Insight worker disabled by REDIS_ENABLED or OLLAMA_ENABLED")
+    return
+  }
+  const { processPageInsight } = await import("../src/lib/ai/page-insights")
   const queue = getInsightQueue()
   await queue.setGlobalConcurrency(1)
   const producer = await queue.getBackend().client

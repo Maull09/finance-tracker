@@ -5,7 +5,7 @@ import { aiConversations, aiMessages } from "@/db/schema"
 import { FinanceError } from "@/lib/finance-errors"
 import { userDatabase } from "@/lib/server/user-database"
 import { insightContextSchema } from "./insight-contract"
-import { insightRevision, insightQueueWaitMs, type InsightJob } from "./insight-queue"
+import { insightRevision, insightQueueWaitMs, requireInsightsEnabled, type InsightJob } from "./insight-queue"
 import { readInsightSummary } from "./insight-summary"
 import { ollamaModel } from "./model"
 
@@ -34,6 +34,7 @@ function stableUuid(value: string) {
 }
 
 export async function processPageInsight(job: InsightJob) {
+  requireInsightsEnabled()
   const { userId, locale, revision, requestedAt } = job.data
   const context = insightContextSchema.parse(job.data.context)
   if (Date.now() - requestedAt > insightQueueWaitMs) throw new UnrecoverableError("Insight queue deadline exceeded")
