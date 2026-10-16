@@ -35,7 +35,7 @@ export function TransactionGroups({
             <div
               key={value}
               className={
-                "min-w-0 rounded-xl border p-4 " +
+                "flex min-w-0 flex-col rounded-xl border p-4 " +
                 (selected ? "border-brand-border bg-brand-soft" : "bg-card")
               }
             >
@@ -52,15 +52,17 @@ export function TransactionGroups({
                   {t("income")}: {formatCurrency(group.income)}
                 </p>
               )}
-              <Button
-                variant="outline"
-                className="mt-4 w-full"
-                aria-pressed={selected}
-                onClick={() => onSelect(value)}
-              >
-                {t("viewGroupTransactions")}
-                <span className="sr-only">{" " + name}</span>
-              </Button>
+              <div className="mt-auto pt-4">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  aria-pressed={selected}
+                  onClick={() => onSelect(value)}
+                >
+                  {t("viewGroupTransactions")}
+                  <span className="sr-only">{" " + name}</span>
+                </Button>
+              </div>
             </div>
           )
         })}
