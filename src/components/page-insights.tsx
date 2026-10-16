@@ -6,6 +6,7 @@ import { jsonBody, requestJson } from "@/lib/client-api"
 import { clearRemoteResourceCache } from "@/lib/remote-resource-cache"
 import type { InsightContext, InsightPage, InsightStatus } from "@/lib/ai/insight-contract"
 import { useAuth } from "./auth-provider"
+import { useAiAvailability } from "./ai-availability-provider"
 import { useLanguage } from "./language-provider"
 import { ErrorNotice } from "./feedback"
 import { Button } from "./ui/button"
@@ -18,9 +19,10 @@ const nextPage: Record<InsightPage, InsightPage> = {
 }
 
 export function PageInsights({ context, ready }: { context: InsightContext; ready: boolean }) {
+  const { insightsEnabled } = useAiAvailability()
   const { user } = useAuth()
   const { locale } = useLanguage()
-  if (!ready || !user) return null
+  if (!insightsEnabled || !ready || !user) return null
   return <InsightPanel key={JSON.stringify([user.id, context, locale])} context={context} />
 }
 

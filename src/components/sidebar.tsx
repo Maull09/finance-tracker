@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import { useLanguage } from "./language-provider"
 import { useAuth } from "./auth-provider"
+import { useAiAvailability } from "./ai-availability-provider"
 import { useState } from "react"
 import { Button } from "./ui/button"
 import { AddAccountForm } from "./accounts-form"
@@ -68,6 +69,7 @@ export function Sidebar({
 }) {
   const { locale, setLocale, t } = useLanguage()
   const { user, signOut } = useAuth()
+  const { assistantEnabled } = useAiAvailability()
   const [signingOut, setSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState(false)
   async function handleSignOut() {
@@ -130,27 +132,35 @@ export function Sidebar({
                   .map(
                     (key) => navigationItems.find((item) => item.key === key)!,
                   )
-                  .map(({ key, icon: Icon }) => (
-                    <li key={key}>
-                      <a
-                        href={"#" + key}
-                        aria-current={activeTab === key ? "page" : undefined}
-                        onClick={onClose}
-                        className={
-                          "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors " +
-                          (activeTab === key
-                            ? "bg-brand-soft font-semibold text-brand-active"
-                            : "text-slate-600 hover:bg-muted hover:text-foreground")
-                        }
-                      >
-                        <Icon
-                          aria-hidden="true"
-                          className="h-[18px] w-[18px] shrink-0"
-                        />
-                        {t(key)}
-                      </a>
-                    </li>
-                  ))}
+                  .map(({ key, icon: Icon }) => {
+                    const disabled = key === "ai" && !assistantEnabled
+                    return (
+                      <li key={key}>
+                        <a
+                          href={disabled ? undefined : "#" + key}
+                          role={disabled ? "link" : undefined}
+                          aria-disabled={disabled || undefined}
+                          title={disabled ? t("aiDisabled") : undefined}
+                          aria-current={activeTab === key ? "page" : undefined}
+                          onClick={disabled ? undefined : onClose}
+                          className={
+                            "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors " +
+                            (disabled
+                              ? "cursor-not-allowed text-muted-foreground opacity-50"
+                              : activeTab === key
+                              ? "bg-brand-soft font-semibold text-brand-active"
+                              : "text-slate-600 hover:bg-muted hover:text-foreground")
+                          }
+                        >
+                          <Icon
+                            aria-hidden="true"
+                            className="h-[18px] w-[18px] shrink-0"
+                          />
+                          {t(key)}
+                        </a>
+                      </li>
+                    )
+                  })}
               </ul>
             </section>
           ))}

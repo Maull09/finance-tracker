@@ -26,6 +26,8 @@ Run [ai-storage.sql](../scripts/ai-storage.sql) in the **Supabase project used b
 
 Restart the development server after changing environment variables. Open `/dashboard#ai` to chat. Open `/dashboard#transactions` and choose **Read receipt** to upload an image and review its draft. The assistant page contains chat only; pending drafts from both chat and receipts can be reviewed and confirmed on Transactions, including after reloading. Receipt reading still stores its extraction messages in conversation history.
 
+The dashboard receives AI availability from the server before rendering its features. With `OLLAMA_ENABLED=false`, AI navigation and receipt reading are disabled; direct chat links show the disabled message without loading conversations. Contextual insight panels do not mount or send requests when either `OLLAMA_ENABLED=false` or `REDIS_ENABLED=false`. Redis alone does not disable chat or receipt reading. Saved transaction drafts remain available for review and confirmation, and saved history remains accessible through the API.
+
 ## Supported behavior
 
 - Chat can read account balances, monthly transaction totals, budgets, goals, debts, financial health indicators, and up to 50 transactions in a date range. Overview sections are capped at 100 rows. It can prepare up to three transaction drafts per message.
