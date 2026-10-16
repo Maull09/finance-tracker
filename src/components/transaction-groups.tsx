@@ -35,7 +35,7 @@ export function TransactionGroups({
             <div
               key={value}
               className={
-                "flex min-w-0 flex-col rounded-xl border p-4 " +
+                "@container flex min-w-0 flex-col rounded-xl border p-4 " +
                 (selected ? "border-brand-border bg-brand-soft" : "bg-card")
               }
             >
@@ -43,15 +43,22 @@ export function TransactionGroups({
               <p className="mt-1 text-xs text-muted-foreground">
                 {t("groupTransactionCount", { count: group.count })}
               </p>
-              <p className="mt-4 text-xs text-muted-foreground">{t("expenses")}</p>
-              <p className="mt-1 break-words text-xl font-semibold tabular-nums text-destructive">
-                {formatCurrency(group.expense)}
-              </p>
-              {group.income > 0 && (
-                <p className="mt-2 break-words text-sm tabular-nums">
-                  {t("income")}: {formatCurrency(group.income)}
-                </p>
-              )}
+              <dl className="mt-4 grid gap-4 @sm:grid-cols-2">
+                <div className="min-w-0">
+                  <dt className="text-xs text-muted-foreground">{t("expenses")}</dt>
+                  <dd className="mt-1 break-words text-xl font-semibold tabular-nums text-destructive">
+                    {formatCurrency(group.expense)}
+                  </dd>
+                </div>
+                {group.income > 0 && (
+                  <div className="min-w-0">
+                    <dt className="text-xs text-muted-foreground">{t("income")}</dt>
+                    <dd className="mt-1 break-words text-xl font-semibold tabular-nums text-emerald-700">
+                      {formatCurrency(group.income)}
+                    </dd>
+                  </div>
+                )}
+              </dl>
               <div className="mt-auto pt-4">
                 <Button
                   variant="outline"
