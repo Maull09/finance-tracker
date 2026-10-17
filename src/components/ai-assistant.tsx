@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { MessageSquare, Plus, Send } from "lucide-react"
 import { useLanguage } from "./language-provider"
+import { useAiAvailability } from "./ai-availability-provider"
 import { EmptyState, ErrorNotice, Field, LoadingState, PageHeading } from "./feedback"
 import { Button } from "./ui/button"
 import { Textarea } from "./ui/textarea"
@@ -12,6 +13,18 @@ import { clearRemoteResourceCache } from "@/lib/remote-resource-cache"
 import type { AiConversation, AiConversationDetail } from "@/lib/ai/types"
 
 export function AiAssistant() {
+  const { assistantEnabled } = useAiAvailability()
+  const { t } = useLanguage()
+  if (!assistantEnabled) return (
+    <div className="space-y-6">
+      <PageHeading title={t("ai")} description={t("aiDescription")} />
+      <p className="rounded-xl border bg-card p-4 text-sm text-muted-foreground sm:p-5">{t("aiDisabled")}</p>
+    </div>
+  )
+  return <AssistantChat />
+}
+
+function AssistantChat() {
   const { t } = useLanguage()
   const conversations = useRemoteData<AiConversation[]>("/api/ai/conversations")
   const [selected, setSelected] = useState(() => {

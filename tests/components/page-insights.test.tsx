@@ -15,6 +15,7 @@ vi.mock("@/components/language-provider", () => ({ useLanguage: () => ({ locale:
   },
 }) }))
 import { PageInsights } from "@/components/page-insights"
+import { AiAvailabilityProvider } from "@/components/ai-availability-provider"
 
 describe("automatic page insights", () => {
   let root: Root
@@ -34,12 +35,34 @@ describe("automatic page insights", () => {
     container.remove()
     vi.useRealTimers()
   })
-  async function mount(page: "dashboard" | "investments" = "dashboard", ready = true) {
-    await act(async () => root.render(<PageInsights context={{ page }} ready={ready} />))
+  async function mount(page: "dashboard" | "investments" = "dashboard", ready = true, insightsEnabled = true) {
+    await act(async () => root.render(
+      <AiAvailabilityProvider value={{ assistantEnabled: true, insightsEnabled }}>
+        <PageInsights context={{ page }} ready={ready} />
+      </AiAvailabilityProvider>,
+    ))
   }
   async function advance(ms: number) {
     await act(async () => { await vi.advanceTimersByTimeAsync(ms) })
   }
+  it("does not show loading, start timers or request insights when disabled before mounting", async () => {
+    await mount("dashboard", true, false)
+    expect(container.textContent).toBe("")
+    expect(container.querySelector('[aria-busy]')).toBeNull()
+    expect(vi.getTimerCount()).toBe(0)
+    await advance(10000)
+    expect(mocks.request).not.toHaveBeenCalled()
+  })
+  it("cancels active analysis when insights are disabled", async () => {
+    mocks.request.mockResolvedValueOnce({ jobId: "job", status: "waiting" })
+    await mount(); await advance(600)
+    const signal = mocks.request.mock.calls[0][1].signal as AbortSignal
+    await mount("dashboard", true, false)
+    expect(signal.aborted).toBe(true)
+    expect(container.textContent).toBe("")
+    await advance(10000)
+    expect(mocks.request).toHaveBeenCalledOnce()
+  })
   it("waits for page data, starts automatically, polls and links to the saved conversation", async () => {
     mocks.request.mockResolvedValueOnce({ jobId: "job", status: "waiting" }).mockResolvedValueOnce(completed)
     await mount("dashboard", false)

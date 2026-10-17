@@ -5,6 +5,7 @@ import { ReceiptText } from "lucide-react"
 import { AiDraftForm, aiSelectClass } from "./ai-draft"
 import { ErrorNotice, Field, LoadingState } from "./feedback"
 import { useLanguage } from "./language-provider"
+import { useAiAvailability } from "./ai-availability-provider"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
@@ -40,6 +41,17 @@ export function AiTransactionDrafts({ accounts }: { accounts: Account[] }) {
 }
 
 export function ReceiptReader({ accounts }: { accounts: Account[] }) {
+  const { assistantEnabled } = useAiAvailability()
+  const { t } = useLanguage()
+  if (!assistantEnabled) return (
+    <Button variant="outline" disabled title={t("aiDisabled")}>
+      <ReceiptText aria-hidden="true" />{t("aiReadReceipt")}
+    </Button>
+  )
+  return <ReceiptDialog accounts={accounts} />
+}
+
+function ReceiptDialog({ accounts }: { accounts: Account[] }) {
   const { t, locale } = useLanguage()
   const [open, setOpen] = useState(false)
   const [file, setFile] = useState<File | null>(null)

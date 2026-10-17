@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it, vi } from "vitest"
 import { LanguageProvider } from "@/components/language-provider"
+import { AiAvailabilityProvider } from "@/components/ai-availability-provider"
 import { FinancialHealth } from "@/components/financial-health"
 import { calculateFinancialHealth } from "@/lib/financial-health"
 
@@ -16,7 +17,13 @@ describe("financial health interface", () => {
       recurringExpense: 0, unpricedHoldings: 0, oldestPriceDate: null,
     }, { month: "2026-09", essentialExpense: null, monthlyDebtPayment: null })
     remote.mockReturnValue({ data: report, loading: false, refreshing: false, error: "", reload: vi.fn() })
-    const markup = renderToStaticMarkup(<LanguageProvider><FinancialHealth /></LanguageProvider>)
+    const markup = renderToStaticMarkup(
+      <LanguageProvider>
+        <AiAvailabilityProvider value={{ assistantEnabled: true, insightsEnabled: true }}>
+          <FinancialHealth />
+        </AiAvailabilityProvider>
+      </LanguageProvider>,
+    )
     expect(markup).toContain("Incomplete data")
     expect(markup).toContain('for="health-essential"')
     expect(markup).toContain('for="health-debt"')
