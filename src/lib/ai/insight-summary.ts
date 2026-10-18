@@ -3,9 +3,10 @@ import { stockTrades, recurringTransactions } from "@/db/schema"
 import { expenseCategories, incomeCategories, getCurrentMonth, getToday, getNextMonthStart } from "@/lib/finance"
 import { getPreviousPeriod } from "@/lib/calculations"
 import { calculateHoldings, investmentTotals } from "@/lib/investments"
-import { monthlyFundSaving, scheduleOccurrences, simulateCashflow } from "@/lib/planning"
+import { monthlyFundSaving, projectNetWorth, scheduleOccurrences, simulateCashflow } from "@/lib/planning"
 import { parseTransactionFilters } from "@/lib/transaction-filters"
 import { readFinancialHealth } from "@/lib/server/financial-health-queries"
+import { readSimulationBalance } from "@/lib/server/simulation-queries"
 import { readBudgets } from "@/lib/server/budget-queries"
 import { readBalanceLedger, readReservedCash, goalSummaryQuery, debtSummaryQuery } from "@/lib/server/financial-queries"
 import { readReservations } from "@/lib/server/ledger"
@@ -120,11 +121,21 @@ export async function readInsightSummary(connection: Connection, context: Insigh
       debtDue: debtRows.filter((row) => row.type === "utang" && row.dueDate && row.dueDate >= from && row.dueDate <= to).reduce((sum, row) => sum + row.remaining, 0),
       fundTargetDue: reservations.funds.filter((fund) => fund.targetDate >= from && fund.targetDate <= to).reduce((sum, fund) => sum + fund.targetAmount, 0) }
   }
-  if (page === "planning" || page === "simulation") {
-    const [ledger, schedules] = await Promise.all([readBalanceLedger(connection), connection.select().from(recurringTransactions)])
-    const input = page === "simulation" ? context.input : { endDate: context.endDate, extraIncomes: [], extraExpenses: [] }
+  if (page === "simulation") {
+    const [balance, schedules] = await Promise.all([
+      readSimulationBalance(connection),
+      connection.select().from(recurringTransactions),
+    ])
+    const input = context.input
     const named = (items: typeof input.extraIncomes) => items.map((item) => ({ ...item, name: "Scenario" }))
-    return { endDate: input.endDate, forecastOnly: true, ...simulateCashflow(ledger.cashBalance, schedules, today, input.endDate, named(input.extraIncomes), named(input.extraExpenses)) }
+    const cashflow = simulateCashflow(balance.currentBalance, schedules, today, input.endDate, named(input.extraIncomes), named(input.extraExpenses))
+    return { endDate: input.endDate, forecastOnly: true,
+      ...projectNetWorth(cashflow, balance),
+      netWorthAssumption: "Stock values, receivables and liabilities stay at their current values; only cash changes." }
+  }
+  if (page === "planning") {
+    const [ledger, schedules] = await Promise.all([readBalanceLedger(connection), connection.select().from(recurringTransactions)])
+    return { endDate: context.endDate, forecastOnly: true, ...simulateCashflow(ledger.cashBalance, schedules, today, context.endDate, [], []) }
   }
   const month = page === "reports" ? context.month : getCurrentMonth()
   const [transactions, health] = await Promise.all([
