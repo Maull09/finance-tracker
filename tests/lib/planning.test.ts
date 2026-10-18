@@ -122,7 +122,7 @@ describe("recurring calendar and projections", () => {
 })
 
 describe("net worth projections", () => {
-  const balance = { currentBalance: 1000000, knownNetWorth: 3000000, netWorth: 3000000 }
+  const balance = { currentBalance: 1000000, knownGrossWorth: 5000000, grossWorth: 5000000, knownNetWorth: 3000000, netWorth: 3000000 }
   const cashflow = simulateCashflow(balance.currentBalance, [salary], "2026-01-01", "2026-02-28",
     [{ name: "Bonus", amount: 2000000, date: "2026-02-01" }],
     [{ name: "Purchase", amount: 4000000, date: "2026-01-10" }])
@@ -132,13 +132,19 @@ describe("net worth projections", () => {
     expect(result).toMatchObject({ currentBalance: 1000000, netWorth: 3000000,
       scenario: 9000000, projectedNetWorth: 11000000, knownProjectedNetWorth: 11000000 })
     expect(result.rows.map((row) => row.netWorth)).toEqual([4000000, 11000000])
+    expect(result).toMatchObject({ grossWorth: 5000000, projectedGrossWorth: 13000000, knownProjectedGrossWorth: 13000000 })
+    expect(result.rows.map((row) => row.grossWorth)).toEqual([6000000, 13000000])
   })
   it("preserves incomplete valuations in every projected month", () => {
-    const result = projectNetWorth(cashflow, { ...balance, netWorth: null })
+    const result = projectNetWorth(cashflow, { ...balance, grossWorth: null, netWorth: null })
     expect(result.projectedNetWorth).toBeNull()
     expect(result.knownProjectedNetWorth).toBe(11000000)
     expect(result.rows.map((row) => row.netWorth)).toEqual([null, null])
     expect(result.rows.map((row) => row.knownNetWorth)).toEqual([4000000, 11000000])
+    expect(result.projectedGrossWorth).toBeNull()
+    expect(result.knownProjectedGrossWorth).toBe(13000000)
+    expect(result.rows.map((row) => row.grossWorth)).toEqual([null, null])
+    expect(result.rows.map((row) => row.knownGrossWorth)).toEqual([6000000, 13000000])
   })
   it("allows negative net worth and leaves it unchanged without cash flow", () => {
     const negative = { ...balance, knownNetWorth: -2000000, netWorth: -2000000 }

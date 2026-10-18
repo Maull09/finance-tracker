@@ -278,7 +278,7 @@ export function FinancialSimulation() {
         extraIncomes: incomes.map((item) => ({ amount: Number(item.amount), date: item.date })),
         extraExpenses: expenses.map((item) => ({ amount: Number(item.amount), date: item.date })),
       } }} ready={Boolean(balance.data) && !balance.loading && !balance.refreshing && !balance.error && !invalidCashflow && Boolean(endDate) && endDate >= today} />
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-3">
         <section
           aria-label={t("currentCash")}
           className="min-w-0 rounded-xl border bg-white p-5"
@@ -299,6 +299,24 @@ export function FinancialSimulation() {
           <div className="mt-3">
             <ErrorNotice message={balance.error} onRetry={balance.reload} />
           </div>
+        </section>
+        <section
+          aria-label={t("currentGrossWorth")}
+          className="min-w-0 rounded-xl border bg-white p-5"
+        >
+          <p className="text-sm text-muted-foreground">
+            {t(balance.data?.grossWorth === null ? "currentKnownGrossWorth" : "currentGrossWorth")}
+          </p>
+          {balance.loading ? (
+            <p role="status" className="mt-2 text-lg font-semibold">{t("loading")}</p>
+          ) : balance.data ? (
+            <p className={`mt-2 break-words text-2xl font-semibold tabular-nums ${balance.data.knownGrossWorth < 0 ? "text-rose-700" : "text-brand-active"}`}>
+              {formatCurrency(balance.data.knownGrossWorth)}
+            </p>
+          ) : null}
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            {t("grossWorthDescription")}
+          </p>
         </section>
         <section
           aria-label={t("currentNetWorth")}
@@ -402,20 +420,24 @@ export function FinancialSimulation() {
           </div>
           <dl className="grid gap-4 rounded-xl border bg-white p-5 sm:grid-cols-2 xl:grid-cols-3">
             {[
+              [
+                "projectedCash",
+                result.scenario,
+                result.scenario < 0 ? "text-rose-700" : "text-brand-active",
+              ],
+              [result.projectedGrossWorth === null ? "projectedKnownGrossWorth" : "projectedGrossWorth", result.knownProjectedGrossWorth,
+                result.knownProjectedGrossWorth < 0 ? "text-rose-700" : "text-brand-active"],
+              [result.projectedNetWorth === null ? "projectedKnownNetWorth" : "projectedNetWorth", result.knownProjectedNetWorth,
+                result.knownProjectedNetWorth < 0 ? "text-rose-700" : "text-brand-active"],
               ["currentCash", result.currentBalance, ""],
+              [result.grossWorth === null ? "currentKnownGrossWorth" : "currentGrossWorth", result.knownGrossWorth,
+                result.knownGrossWorth < 0 ? "text-rose-700" : ""],
               [result.netWorth === null ? "currentKnownNetWorth" : "currentNetWorth", result.knownNetWorth,
                 result.knownNetWorth < 0 ? "text-rose-700" : ""],
               ["scheduledIncome", result.scheduledIncome, "text-emerald-700"],
               ["addedIncome", result.extraIncome, "text-emerald-700"],
               ["scheduledExpenses", result.scheduledExpense, "text-rose-700"],
               ["addedExpenses", result.extraExpense, "text-rose-700"],
-              [
-                "projectedCash",
-                result.scenario,
-                result.scenario < 0 ? "text-rose-700" : "text-brand-active",
-              ],
-              [result.projectedNetWorth === null ? "projectedKnownNetWorth" : "projectedNetWorth", result.knownProjectedNetWorth,
-                result.knownProjectedNetWorth < 0 ? "text-rose-700" : "text-brand-active"],
             ].map(([key, value, tone]) => (
               <div key={String(key)} className="min-w-0">
                 <dt className="text-sm text-muted-foreground">
@@ -451,7 +473,7 @@ export function FinancialSimulation() {
             tabIndex={0}
             className="overflow-x-auto rounded-xl border bg-white"
           >
-            <table className="w-full min-w-[920px] text-sm">
+            <table className="w-full min-w-[1080px] text-sm">
               <caption className="sr-only">{t("monthlyProjection")}</caption>
               <thead className="bg-muted/50">
                 <tr>
@@ -463,6 +485,7 @@ export function FinancialSimulation() {
                     "addedExpenses",
                     "baseline",
                     "projectedCash",
+                    result.grossWorth === null ? "projectedKnownGrossWorth" : "projectedGrossWorth",
                     result.netWorth === null ? "projectedKnownNetWorth" : "projectedNetWorth",
                   ].map((key, index) => (
                     <th
@@ -488,6 +511,7 @@ export function FinancialSimulation() {
                       row.extraExpense,
                       row.baseline,
                       row.scenario,
+                      row.knownGrossWorth,
                       row.knownNetWorth,
                     ].map((amount, index) => (
                       <td

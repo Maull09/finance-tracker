@@ -150,12 +150,20 @@ export function projectNetWorth(
 ) {
   function atCash(projectedCash: number) {
     const knownNetWorth = balance.knownNetWorth + projectedCash - balance.currentBalance
-    return { knownNetWorth, netWorth: balance.netWorth === null ? null : knownNetWorth }
+    const knownGrossWorth = balance.knownGrossWorth + projectedCash - balance.currentBalance
+    return {
+      knownNetWorth,
+      netWorth: balance.netWorth === null ? null : knownNetWorth,
+      knownGrossWorth,
+      grossWorth: balance.grossWorth === null ? null : knownGrossWorth,
+    }
   }
   const projected = atCash(cashflow.scenario)
   return {
     ...cashflow,
     ...balance,
+    knownProjectedGrossWorth: projected.knownGrossWorth,
+    projectedGrossWorth: projected.grossWorth,
     knownProjectedNetWorth: projected.knownNetWorth,
     projectedNetWorth: projected.netWorth,
     rows: cashflow.rows.map((row) => ({ ...row, ...atCash(row.scenario) })),

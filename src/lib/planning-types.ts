@@ -59,11 +59,15 @@ export type PlannedCashflow = {
 }
 export type SimulationBalanceData = {
   currentBalance: number
+  knownGrossWorth: number
+  grossWorth: number | null
   knownNetWorth: number
   netWorth: number | null
 }
 export type SimulationData = SimulationBalanceData & {
   endDate: string
+  knownProjectedGrossWorth: number
+  projectedGrossWorth: number | null
   knownProjectedNetWorth: number
   projectedNetWorth: number | null
   baseline: number
@@ -86,6 +90,8 @@ export type SimulationData = SimulationBalanceData & {
     difference: number
     knownNetWorth: number
     netWorth: number | null
+    knownGrossWorth: number
+    grossWorth: number | null
   }>
 }
 export type NetWorthData = {

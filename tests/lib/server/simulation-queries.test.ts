@@ -20,21 +20,31 @@ describe("calculator balance sheet", () => {
     mocks.prices.mockResolvedValue([{ symbol: "BBCA", price: 10000, date: "2026-10-19" }])
   })
   it("combines recorded cash, stock market values, receivables and remaining debts", async () => {
-    expect(await readSimulationBalance(connection)).toEqual({ currentBalance: 10000000, knownNetWorth: 9000000, netWorth: 9000000 })
+    expect(await readSimulationBalance(connection)).toEqual({ currentBalance: 10000000,
+      knownGrossWorth: 13000000, grossWorth: 13000000, knownNetWorth: 9000000, netWorth: 9000000 })
     expect(mocks.ledger).toHaveBeenCalledWith(connection)
     expect(mocks.debts).toHaveBeenCalledWith(connection)
     expect(mocks.prices).toHaveBeenCalledWith(connection, ["BBCA"])
   })
   it("excludes unpriced shares from the subtotal and marks net worth incomplete", async () => {
     mocks.prices.mockResolvedValue([])
-    expect(await readSimulationBalance(connection)).toEqual({ currentBalance: 10000000, knownNetWorth: 8000000, netWorth: null })
+    expect(await readSimulationBalance(connection)).toEqual({ currentBalance: 10000000,
+      knownGrossWorth: 12000000, grossWorth: null, knownNetWorth: 8000000, netWorth: null })
   })
   it("returns zero for empty records and preserves a negative balance sheet", async () => {
     mocks.ledger.mockResolvedValue({ cashBalance: 0 })
     mocks.from.mockResolvedValue([])
     mocks.debts.mockResolvedValue([])
-    expect(await readSimulationBalance(connection)).toEqual({ currentBalance: 0, knownNetWorth: 0, netWorth: 0 })
+    expect(await readSimulationBalance(connection)).toEqual({ currentBalance: 0,
+      knownGrossWorth: 0, grossWorth: 0, knownNetWorth: 0, netWorth: 0 })
     mocks.debts.mockResolvedValue([{ type: "utang", remaining: 4000000 }])
-    expect(await readSimulationBalance(connection)).toMatchObject({ netWorth: -4000000 })
+    expect(await readSimulationBalance(connection)).toMatchObject({ grossWorth: 0, netWorth: -4000000 })
+  })
+  it("keeps gross worth unchanged when outstanding debts increase", async () => {
+    const before = await readSimulationBalance(connection)
+    mocks.debts.mockResolvedValue([{ type: "utang", remaining: 6000000 }, { type: "piutang", remaining: 2000000 }])
+    const after = await readSimulationBalance(connection)
+    expect(after.grossWorth).toBe(before.grossWorth)
+    expect(after.netWorth).toBe(before.netWorth! - 2000000)
   })
 })
