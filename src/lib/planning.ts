@@ -1,5 +1,5 @@
 import { getNextMonthStart } from "./finance"
-import type { PlannedCashflow } from "./planning-types"
+import type { PlannedCashflow, SimulationBalanceData } from "./planning-types"
 
 export type Schedule = {
   id: number
@@ -141,6 +141,24 @@ export function simulateCashflow(
     extraExpense: extraExpenses.reduce((total, item) => total + item.amount, 0),
     extraExpenseCount: extraExpenses.length,
     rows,
+  }
+}
+
+export function projectNetWorth(
+  cashflow: ReturnType<typeof simulateCashflow>,
+  balance: SimulationBalanceData,
+) {
+  function atCash(projectedCash: number) {
+    const knownNetWorth = balance.knownNetWorth + projectedCash - balance.currentBalance
+    return { knownNetWorth, netWorth: balance.netWorth === null ? null : knownNetWorth }
+  }
+  const projected = atCash(cashflow.scenario)
+  return {
+    ...cashflow,
+    ...balance,
+    knownProjectedNetWorth: projected.knownNetWorth,
+    projectedNetWorth: projected.netWorth,
+    rows: cashflow.rows.map((row) => ({ ...row, ...atCash(row.scenario) })),
   }
 }
 

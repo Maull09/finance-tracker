@@ -425,7 +425,7 @@ export const id: Record<keyof typeof en, string> = {
   calendarDescription:
     "Pembayaran rutin, pemasukan, jatuh tempo utang, dan target dana dalam satu tempat.",
   simulationDescription:
-    "Lihat proyeksi saldo dari kas saat ini, jadwal rutin, dan rencana pemasukan serta pengeluaran.",
+    "Lihat proyeksi kas dan kekayaan bersih dari saldo saat ini, jadwal rutin, serta rencana pemasukan dan pengeluaran.",
   fundsDescription:
     "Sisihkan uang untuk kebutuhan terencana seperti premi tahunan, pajak kendaraan, atau liburan.",
   investmentOpeningHint:
@@ -555,6 +555,14 @@ export const id: Record<keyof typeof en, string> = {
   expenseAmount: "Nominal (IDR)",
   expenseDate: "Tanggal pengeluaran",
   currentCash: "Kas saat ini",
+  currentNetWorth: "Kekayaan bersih saat ini",
+  currentKnownNetWorth: "Kekayaan bersih saat ini (subtotal diketahui)",
+  projectedNetWorth: "Kekayaan bersih proyeksi",
+  projectedKnownNetWorth: "Kekayaan bersih proyeksi (subtotal diketahui)",
+  netWorthProjectionHint:
+    "Kekayaan bersih = kas + nilai pasar saham + piutang − sisa utang. Hanya kas yang berubah dalam proyeksi ini; nilai saham, piutang, dan utang tetap memakai posisi saat ini. Kas yang dialokasikan sudah termasuk. Perhitungan ini tidak mengubah catatan keuangan.",
+  incompleteNetWorthProjection:
+    "Sebagian kepemilikan saham belum memiliki harga. Kekayaan bersih saat ini dan proyeksi hanya menampilkan subtotal yang diketahui.",
   scheduledIncome: "Pemasukan terjadwal",
   scheduledExpenses: "Pengeluaran terjadwal",
   projectedCash: "Kas proyeksi",

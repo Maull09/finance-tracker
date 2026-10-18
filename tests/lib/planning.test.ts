@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   fundBalance,
   monthlyFundSaving,
+  projectNetWorth,
   scheduleOccurrences,
   simulateCashflow,
   type Schedule,
@@ -117,6 +118,33 @@ describe("recurring calendar and projections", () => {
         [{ name: "Lunch", amount: 100000, date: "2026-01-01" }],
       ).scenario,
     ).toBe(900000)
+  })
+})
+
+describe("net worth projections", () => {
+  const balance = { currentBalance: 1000000, knownNetWorth: 3000000, netWorth: 3000000 }
+  const cashflow = simulateCashflow(balance.currentBalance, [salary], "2026-01-01", "2026-02-28",
+    [{ name: "Bonus", amount: 2000000, date: "2026-02-01" }],
+    [{ name: "Purchase", amount: 4000000, date: "2026-01-10" }])
+
+  it("adds only the projected cash change to current net worth each month", () => {
+    const result = projectNetWorth(cashflow, balance)
+    expect(result).toMatchObject({ currentBalance: 1000000, netWorth: 3000000,
+      scenario: 9000000, projectedNetWorth: 11000000, knownProjectedNetWorth: 11000000 })
+    expect(result.rows.map((row) => row.netWorth)).toEqual([4000000, 11000000])
+  })
+  it("preserves incomplete valuations in every projected month", () => {
+    const result = projectNetWorth(cashflow, { ...balance, netWorth: null })
+    expect(result.projectedNetWorth).toBeNull()
+    expect(result.knownProjectedNetWorth).toBe(11000000)
+    expect(result.rows.map((row) => row.netWorth)).toEqual([null, null])
+    expect(result.rows.map((row) => row.knownNetWorth)).toEqual([4000000, 11000000])
+  })
+  it("allows negative net worth and leaves it unchanged without cash flow", () => {
+    const negative = { ...balance, knownNetWorth: -2000000, netWorth: -2000000 }
+    const unchanged = simulateCashflow(balance.currentBalance, [], "2026-01-01", "2026-01-31", [], [])
+    expect(projectNetWorth(unchanged, negative).projectedNetWorth).toBe(-2000000)
+    expect(balance.netWorth).toBe(3000000)
   })
 })
 
