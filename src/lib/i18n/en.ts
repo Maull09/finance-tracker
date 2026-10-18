@@ -425,7 +425,7 @@ export const en = {
   calendarDescription:
     "Recurring payments, income, debt deadlines, and planned fund targets in one place.",
   simulationDescription:
-    "Preview cash and net worth from current balances, recurring schedules, and planned income and expenses.",
+    "Preview cash, gross worth, and net worth from current balances, recurring schedules, and planned income and expenses.",
   fundsDescription:
     "Set money aside for predictable expenses such as annual insurance, vehicle tax, or a holiday.",
   investmentOpeningHint:
@@ -555,14 +555,17 @@ export const en = {
   expenseAmount: "Amount (IDR)",
   expenseDate: "Expense date",
   currentCash: "Current cash",
+  currentGrossWorth: "Current gross worth",
+  projectedGrossWorth: "Projected gross worth",
+  grossWorthDescription: "Cash + purchase cost of stocks still held (including buy fees) + receivables.",
   currentNetWorth: "Current net worth",
   currentKnownNetWorth: "Current net worth (known subtotal)",
   projectedNetWorth: "Projected net worth",
   projectedKnownNetWorth: "Projected net worth (known subtotal)",
   netWorthProjectionHint:
-    "Net worth = cash + stock market value + receivables − outstanding debts. Only cash changes in this projection; stock values, receivables, and debts stay at their current values. Allocated cash is already included. This calculation does not change your records.",
+    "Gross worth = cash + purchase cost of stocks still held (including buy fees) + receivables. Net worth = cash + stock market value + receivables − outstanding debts. Only cash changes in this projection; stock costs, market values, receivables, and debts stay fixed. Allocated cash is already included. This calculation does not change your records.",
   incompleteNetWorthProjection:
-    "Some holdings have no price. Current and projected net worth show only the known subtotal.",
+    "Some holdings have no market price. Current and projected net worth show only the known subtotal. Gross worth uses stock purchase costs and remains available.",
   scheduledIncome: "Scheduled income",
   scheduledExpenses: "Scheduled expenses",
   projectedCash: "Projected cash",
