@@ -131,7 +131,7 @@ export async function readInsightSummary(connection: Connection, context: Insigh
     const cashflow = simulateCashflow(balance.currentBalance, schedules, today, input.endDate, named(input.extraIncomes), named(input.extraExpenses))
     return { endDate: input.endDate, forecastOnly: true,
       ...projectNetWorth(cashflow, balance),
-      netWorthAssumption: "Stock values, receivables and liabilities stay at their current values; only cash changes." }
+      netWorthAssumption: "Gross worth uses the purchase cost of stocks still held, including buy fees. Net worth uses stock market value. Both keep stock costs, market values, receivables and liabilities fixed; only cash changes. Missing market prices make only net worth incomplete." }
   }
   if (page === "planning") {
     const [ledger, schedules] = await Promise.all([readBalanceLedger(connection), connection.select().from(recurringTransactions)])

@@ -17,7 +17,7 @@ vi.mock("@/components/auth-provider", () => ({ useAuth: () => ({ user: { id: "al
 describe("calculator net worth", () => {
   let root: Root
   let container: HTMLDivElement
-  const balance = { currentBalance: 1000000, knownGrossWorth: 3000000, grossWorth: 3000000 as number | null,
+  const balance = { currentBalance: 1000000, grossWorth: 3000000,
     knownNetWorth: -2000000, netWorth: -2000000 as number | null }
   beforeEach(() => {
     vi.resetAllMocks()
@@ -45,7 +45,7 @@ describe("calculator net worth", () => {
     const today = getToday()
     const data = projectNetWorth(simulateCashflow(balance.currentBalance, [], today, today, [],
       [{ name: "Plan", amount: 500000, date: today }]), { ...balance,
-      grossWorth: incomplete ? null : balance.grossWorth, netWorth: incomplete ? null : balance.netWorth })
+      netWorth: incomplete ? null : balance.netWorth })
     mocks.request.mockResolvedValue({ ...data, endDate: today })
     await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })))
   }
@@ -67,16 +67,18 @@ describe("calculator net worth", () => {
     expect(container.querySelector("table")).toBeNull()
     expect(container.textContent).toContain(messages.en.simulationStale)
   })
-  it("labels incomplete current and projected valuations as known subtotals", async () => {
-    mocks.remote.mockReturnValue({ data: { ...balance, grossWorth: null, netWorth: null }, loading: false, error: "" })
+  it("keeps cost-based gross worth available when market-based net worth is incomplete", async () => {
+    mocks.remote.mockReturnValue({ data: { ...balance, netWorth: null }, loading: false, error: "" })
     await mount()
     await calculate(true)
     expect(container.textContent).toContain(messages.en.currentKnownNetWorth)
-    expect(container.textContent).toContain(messages.en.currentKnownGrossWorth)
-    expect(container.querySelector("th:nth-last-child(2)")!.textContent).toBe(messages.en.projectedKnownGrossWorth)
+    expect(container.textContent).toContain(messages.en.currentGrossWorth)
+    expect(container.querySelector("th:nth-last-child(2)")!.textContent).toBe(messages.en.projectedGrossWorth)
+    expect(container.querySelector("tbody td:nth-last-child(2)")!.textContent).toBe(formatCurrency(2500000, "en"))
     expect(container.querySelector("th:last-child")!.textContent).toBe(messages.en.projectedKnownNetWorth)
     expect(container.textContent).toContain(messages.en.incompleteNetWorthProjection)
     expect(container.textContent).not.toMatch(/NaN|Infinity/)
+    expect(container.textContent).toContain(messages.en.grossWorthDescription)
   })
   it("shows loading and retryable failure without inventing a zero net worth", async () => {
     mocks.remote.mockReturnValue({ data: null, loading: true, error: "" })

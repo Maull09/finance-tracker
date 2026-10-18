@@ -17,12 +17,11 @@ export async function readSimulationBalance(connection: ReadConnection): Promise
     .reduce((total, debt) => total + debt.remaining, 0)
   const receivables = debts.filter((debt) => debt.type === "piutang")
     .reduce((total, debt) => total + debt.remaining, 0)
-  const knownGrossWorth = ledger.cashBalance + investments.knownMarketValue + receivables
-  const knownNetWorth = knownGrossWorth - liabilities
+  const grossWorth = ledger.cashBalance + investments.costBasis + receivables
+  const knownNetWorth = ledger.cashBalance + investments.knownMarketValue + receivables - liabilities
   return {
     currentBalance: ledger.cashBalance,
-    knownGrossWorth,
-    grossWorth: investments.unpricedCount ? null : knownGrossWorth,
+    grossWorth,
     knownNetWorth,
     netWorth: investments.unpricedCount ? null : knownNetWorth,
   }

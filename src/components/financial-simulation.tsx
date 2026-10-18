@@ -305,13 +305,13 @@ export function FinancialSimulation() {
           className="min-w-0 rounded-xl border bg-white p-5"
         >
           <p className="text-sm text-muted-foreground">
-            {t(balance.data?.grossWorth === null ? "currentKnownGrossWorth" : "currentGrossWorth")}
+            {t("currentGrossWorth")}
           </p>
           {balance.loading ? (
             <p role="status" className="mt-2 text-lg font-semibold">{t("loading")}</p>
           ) : balance.data ? (
-            <p className={`mt-2 break-words text-2xl font-semibold tabular-nums ${balance.data.knownGrossWorth < 0 ? "text-rose-700" : "text-brand-active"}`}>
-              {formatCurrency(balance.data.knownGrossWorth)}
+            <p className={`mt-2 break-words text-2xl font-semibold tabular-nums ${balance.data.grossWorth < 0 ? "text-rose-700" : "text-brand-active"}`}>
+              {formatCurrency(balance.data.grossWorth)}
             </p>
           ) : null}
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -425,13 +425,13 @@ export function FinancialSimulation() {
                 result.scenario,
                 result.scenario < 0 ? "text-rose-700" : "text-brand-active",
               ],
-              [result.projectedGrossWorth === null ? "projectedKnownGrossWorth" : "projectedGrossWorth", result.knownProjectedGrossWorth,
-                result.knownProjectedGrossWorth < 0 ? "text-rose-700" : "text-brand-active"],
+              ["projectedGrossWorth", result.projectedGrossWorth,
+                result.projectedGrossWorth < 0 ? "text-rose-700" : "text-brand-active"],
               [result.projectedNetWorth === null ? "projectedKnownNetWorth" : "projectedNetWorth", result.knownProjectedNetWorth,
                 result.knownProjectedNetWorth < 0 ? "text-rose-700" : "text-brand-active"],
               ["currentCash", result.currentBalance, ""],
-              [result.grossWorth === null ? "currentKnownGrossWorth" : "currentGrossWorth", result.knownGrossWorth,
-                result.knownGrossWorth < 0 ? "text-rose-700" : ""],
+              ["currentGrossWorth", result.grossWorth,
+                result.grossWorth < 0 ? "text-rose-700" : ""],
               [result.netWorth === null ? "currentKnownNetWorth" : "currentNetWorth", result.knownNetWorth,
                 result.knownNetWorth < 0 ? "text-rose-700" : ""],
               ["scheduledIncome", result.scheduledIncome, "text-emerald-700"],
@@ -485,7 +485,7 @@ export function FinancialSimulation() {
                     "addedExpenses",
                     "baseline",
                     "projectedCash",
-                    result.grossWorth === null ? "projectedKnownGrossWorth" : "projectedGrossWorth",
+                    "projectedGrossWorth",
                     result.netWorth === null ? "projectedKnownNetWorth" : "projectedNetWorth",
                   ].map((key, index) => (
                     <th
@@ -511,7 +511,7 @@ export function FinancialSimulation() {
                       row.extraExpense,
                       row.baseline,
                       row.scenario,
-                      row.knownGrossWorth,
+                      row.grossWorth,
                       row.knownNetWorth,
                     ].map((amount, index) => (
                       <td
