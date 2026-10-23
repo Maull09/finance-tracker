@@ -179,6 +179,8 @@ export const transactions = pgTable(
     category: text("category").notNull(),
     subcategory: text("subcategory"),
     groupName: text("group_name"),
+    recurringId: integer("recurring_id").references(() => recurringTransactions.id, { onDelete: "set null" }),
+    scheduledDate: date("scheduled_date"),
     description: text("description"),
     date: date("date").notNull(),
     accountId: integer("account_id")
@@ -194,8 +196,11 @@ export const transactions = pgTable(
     ownerPolicy("transactions", [
       ["account_id", "accounts"],
       ["destination_account_id", "accounts"],
+      ["recurring_id", "recurring_transactions"],
     ]),
     index("transactions_user_id_idx").on(table.userId),
+    uniqueIndex("transactions_recurring_occurrence_idx").on(table.recurringId, table.scheduledDate),
+    check("transactions_recurring_date_required", sql`${table.recurringId} is null or ${table.scheduledDate} is not null`),
     check(
       "transactions_valid_group_name",
       sql`${table.groupName} is null or (${table.groupName} = btrim(${table.groupName}) and char_length(${table.groupName}) between 1 and 100)`,
@@ -261,6 +266,7 @@ export const recurringTransactions = pgTable(
     startDate: date("start_date").notNull(),
     endDate: date("end_date"),
     lastExecutedDate: date("last_executed_date"),
+    recordedThroughDate: date("recorded_through_date"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [

@@ -93,7 +93,7 @@ export async function readFinancialHealth(connection: UserDatabase, input: Healt
   if (input.monthlyDebtPayment !== null && input.monthlyDebtPayment < ledger.recordedDebtPayments)
     throw new FinanceError("invalidInput")
   const recurringExpense = schedules.filter((row) => row.type === "expense")
-    .flatMap((schedule) => scheduleOccurrences({ ...schedule, lastExecutedDate: null }, period.start, period.asOf))
+    .flatMap((schedule) => scheduleOccurrences({ ...schedule, recordedThroughDate: null }, period.start, period.asOf))
     .reduce((sum, row) => sum + row.amount, 0)
   const priceDates = holdings.filter((holding) => holding.shares > 0 && holding.priceDate !== null)
     .map((holding) => holding.priceDate!).sort()

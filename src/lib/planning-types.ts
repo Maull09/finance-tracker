@@ -50,6 +50,8 @@ export type CalendarEvent = {
   amount: number
   date: string
   source: string
+  scheduleId?: number
+  accountName?: string | null
 }
 export type CalendarData = { month: string; events: CalendarEvent[] }
 export type PlannedCashflow = {

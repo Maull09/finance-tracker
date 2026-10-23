@@ -293,6 +293,15 @@ export const id: Record<keyof typeof en, string> = {
   noSchedules: "Belum ada jadwal rutin.",
   starts: "mulai",
   recordNow: "Catat sekarang",
+  scheduledDate: "Tanggal jadwal",
+  scheduledDateHint: "Pilih kejadian terjadwal yang ingin dicatat. Tanggal harus sesuai pola mingguan atau bulanan jadwal.",
+  actualTransactionDate: "Tanggal realisasi transaksi",
+  scheduledAmount: "Nominal jadwal",
+  actualTransactionAmount: "Nominal realisasi (IDR)",
+  actualTransactionAmountHint: "Masukkan nominal rupiah bulat di atas nol. Saldo dan laporan memakai nominal ini untuk kejadian ini; nominal jadwal tetap sama.",
+  actualTransactionDateHint: "Pilih tanggal uang benar-benar berpindah, hari ini atau tanggal sebelumnya.",
+  recordOccurrenceHint: "Catat kejadian ini lebih awal atau terlambat. Saldo akun dan laporan memakai tanggal realisasi; hanya kejadian yang dipilih yang diselesaikan.",
+  noPendingOccurrences: "Tidak ada kejadian tertunda",
   deleteScheduleConfirm: "Hapus jadwal rutin ini?",
   scheduleSaveFailed: "Penyimpanan jadwal gagal. Periksa isian lalu coba lagi.",
   forecastFailed: "Perhitungan proyeksi gagal. Coba lagi.",
@@ -314,9 +323,9 @@ export const id: Record<keyof typeof en, string> = {
 
   cashAfterEdit: "Kas tersedia setelah disimpan di {account}",
   scheduleUnavailable:
-    "Jadwal ini belum mulai atau sudah selesai. Periksa tanggal mulai/selesai sebelum mencatat pembayaran.",
+    "Tanggal yang dipilih bukan kejadian dalam jadwal ini. Pilih tanggal mingguan atau bulanan di antara tanggal mulai dan selesai.",
   scheduleAlreadyRecorded:
-    "Pembayaran hari ini sudah dicatat. Periksa catatannya di riwayat transaksi.",
+    "Kejadian terjadwal ini sudah dicatat. Periksa catatannya di riwayat transaksi.",
   helpManage: "Perbarui catatan Anda",
   helpManageBody:
     "Gunakan Ubah atau Hapus di setiap catatan. Buka Kelola transaksi saham untuk mengoreksi catatan saham. Riwayat kontribusi dan pembayaran menyimpan nominal yang sudah dicatat. Periksa konfirmasi sebelum menghapus catatan secara permanen.",
