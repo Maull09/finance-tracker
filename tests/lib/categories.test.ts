@@ -26,6 +26,28 @@ describe("transaction categorization", () => {
     expect(parseTransactionInput({ ...expense, subcategory: "Teh" }))
       .toMatchObject({ category: "Minuman", subcategory: "Teh" })
   })
+  it.each([
+    ["Laundry", "Cuci dan setrika"],
+    ["Pakaian", "Atasan"],
+    ["Barang kebutuhan", "Perlengkapan mandi"],
+    ["Barang lainnya", "Perlengkapan hobi"],
+  ])("accepts %s with its subcategory across transactions, schedules, AI drafts and receipts", (category, subcategory) => {
+    expect(expenseCategories).toContain(category)
+    expect(incomeCategories).not.toContain(category)
+    const input = { ...expense, category, subcategory }
+    expect(parseTransactionInput(input)).toMatchObject({ category, subcategory })
+    expect(parseRecurring({ ...input, name: category, frequency: "monthly", startDate: input.date }))
+      .toMatchObject({ category, subcategory })
+    expect(confirmedDraftSchema.safeParse({ ...input, description: category, destinationAccountId: null }).success).toBe(true)
+    expect(receiptSchema.safeParse({ merchant: null, total: 25000, currency: "IDR", date: input.date, category, notes: "" }).success).toBe(true)
+    expect(parseTransactionInput({ ...input, subcategory: "Kopi" })).toBeNull()
+  })
+  it("keeps existing shopping and household classifications valid", () => {
+    expect(parseTransactionInput({ ...expense, category: "Belanja", subcategory: "Pakaian" }))
+      .toMatchObject({ category: "Belanja", subcategory: "Pakaian" })
+    expect(parseTransactionInput({ ...expense, category: "Rumah tangga", subcategory: "Kebutuhan kebersihan" }))
+      .toMatchObject({ category: "Rumah tangga", subcategory: "Kebutuhan kebersihan" })
+  })
   it.each([undefined, null, ""])("accepts older records and optional subcategories: %s", (subcategory) => {
     expect(parseTransactionInput({ ...expense, category: "Kategori lama", subcategory }))
       .toMatchObject({ category: "Kategori lama", subcategory: null })
