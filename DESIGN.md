@@ -89,6 +89,8 @@ Transaction groups collect records for a named activity, such as a trip, across 
 
 Transaction categorization uses a main category and one optional subcategory, for example Drinks / Coffee. Assumption: users want consistent everyday categories on desktop and mobile without having to configure a taxonomy. Show labelled category and subcategory controls in that order, reset the subcategory when its parent or transaction type changes, and disable it until the chosen category has options. Show the subcategory below the main category in transaction history and support exact filters for both. Budgets and reports continue to total the main category, including all its subcategories. Debt and receivable categories classify cash flow only; explain that outstanding balances and linked payments belong in Debts & receivables. Preserve historical categories and records. Use existing Geist, blue tokens, quiet borders, 44px controls, and stacked mobile forms.
 
+Everyday expenses also offer Laundry, Clothing, Everyday essentials, and Other goods as main categories. Use specific optional subcategories for laundry services, clothing types, consumable household supplies, and miscellaneous goods. Keep existing Shopping / Clothing and Household classifications available; adding these choices never reclassifies past transactions or moves budget totals automatically.
+
 Within group cards, expenses and available income use matching label-and-amount blocks: small muted labels above equally prominent tabular amounts, Negative for expenses and Positive for income. Place the blocks side by side only when the card has enough width; otherwise stack them. Keep the view-transactions action aligned at the bottom of each card.
 
 ### Recording calendar occurrences
