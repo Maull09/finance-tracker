@@ -95,7 +95,15 @@ Transaction groups collect records for a named activity, such as a trip, across 
 
 Transaction categorization uses a main category and one optional subcategory, for example Drinks / Coffee. Assumption: users want consistent everyday categories on desktop and mobile without having to configure a taxonomy. Show labelled category and subcategory controls in that order, reset the subcategory when its parent or transaction type changes, and disable it until the chosen category has options. Show the subcategory below the main category in transaction history and support exact filters for both. Budgets and reports continue to total the main category, including all its subcategories. Debt and receivable categories classify cash flow only; explain that outstanding balances and linked payments belong in Debts & receivables. Preserve historical categories and records. Use existing Geist, blue tokens, quiet borders, 44px controls, and stacked mobile forms.
 
+Everyday expenses also offer Laundry, Clothing, Everyday essentials, and Other goods as main categories. Use specific optional subcategories for laundry services, clothing types, consumable household supplies, and miscellaneous goods. Keep existing Shopping / Clothing and Household classifications available; adding these choices never reclassifies past transactions or moves budget totals automatically.
+
 Within group cards, expenses and available income use matching label-and-amount blocks: small muted labels above equally prominent tabular amounts, Negative for expenses and Positive for income. Place the blocks side by side only when the card has enough width; otherwise stack them. Keep the view-transactions action aligned at the bottom of each card.
+
+### Recording calendar occurrences
+
+The actual amount defaults to the scheduled amount and can be edited for the selected occurrence only. Label the scheduled amount as a reference and show a separate, required actual amount in whole IDR, with a formatted currency preview. Explain that account balances and reports use this actual amount while the schedule amount stays unchanged. Preserve the entered amount as well as dates after a failed save.
+
+Assumption: users want to record a recurring income, expense, or transfer when it actually happens, including before or after its planned date. Show Record now beside pending recurring events in the calendar agenda. Use a compact, scrollable confirmation dialog with the scheduled date, amount, transaction type, and a labelled actual transaction date defaulting to today in Jakarta. The actual date may be today or a past date. Explain that saving changes account balances on the actual date and completes only the selected occurrence. Keep the scheduled date fixed when opening a calendar event; Planning also lets the user choose the occurrence date. Preserve entered dates after failure, disable submission while saving, and show localized success/error feedback. Use existing Geist typography, blue primary action, quiet borders, tabular IDR amounts, and stacked mobile controls.
 
 ### Expense calculator
 

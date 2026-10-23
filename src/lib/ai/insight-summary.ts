@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm"
-import { stockTrades, recurringTransactions } from "@/db/schema"
+import { stockTrades } from "@/db/schema"
 import { expenseCategories, incomeCategories, getCurrentMonth, getToday, getNextMonthStart } from "@/lib/finance"
 import { getPreviousPeriod } from "@/lib/calculations"
 import { calculateHoldings, investmentTotals } from "@/lib/investments"
@@ -12,6 +12,7 @@ import { readBalanceLedger, readReservedCash, goalSummaryQuery, debtSummaryQuery
 import { readReservations } from "@/lib/server/ledger"
 import { readLatestPrices } from "@/lib/server/market-queries"
 import { transactionConditions } from "@/lib/server/transaction-conditions"
+import { recurringSchedulesQuery } from "@/lib/server/recurring-queries"
 import type { UserDatabase } from "@/lib/server/authenticated-response"
 import type { InsightContext } from "./insight-contract"
 import { healthInsightSummary } from "./financial-health"
@@ -114,7 +115,7 @@ export async function readInsightSummary(connection: Connection, context: Insigh
   }
   if (page === "calendar") {
     const from = context.month + "-01", to = periodEnd(context.month)
-    const [schedules, debtRows, reservations] = await Promise.all([connection.select().from(recurringTransactions), debtSummaryQuery(connection), readReservations(connection)])
+    const [schedules, debtRows, reservations] = await Promise.all([recurringSchedulesQuery(connection), debtSummaryQuery(connection), readReservations(connection)])
     const occurrences = schedules.flatMap((schedule) => scheduleOccurrences(schedule, from, to))
     const byType = (type: string) => occurrences.filter((item) => item.type === type).reduce((sum, item) => sum + item.amount, 0)
     return { month: context.month, pendingOccurrenceCount: occurrences.length, scheduledIncome: byType("income"), scheduledExpense: byType("expense"),
@@ -124,7 +125,7 @@ export async function readInsightSummary(connection: Connection, context: Insigh
   if (page === "simulation") {
     const [balance, schedules] = await Promise.all([
       readSimulationBalance(connection),
-      connection.select().from(recurringTransactions),
+      recurringSchedulesQuery(connection),
     ])
     const input = context.input
     const named = (items: typeof input.extraIncomes) => items.map((item) => ({ ...item, name: "Scenario" }))
@@ -134,7 +135,7 @@ export async function readInsightSummary(connection: Connection, context: Insigh
       netWorthAssumption: "Gross worth uses the purchase cost of stocks still held, including buy fees. Net worth uses stock market value. Both keep stock costs, market values, receivables and liabilities fixed; only cash changes. Missing market prices make only net worth incomplete." }
   }
   if (page === "planning") {
-    const [ledger, schedules] = await Promise.all([readBalanceLedger(connection), connection.select().from(recurringTransactions)])
+    const [ledger, schedules] = await Promise.all([readBalanceLedger(connection), recurringSchedulesQuery(connection)])
     return { endDate: context.endDate, forecastOnly: true, ...simulateCashflow(ledger.cashBalance, schedules, today, context.endDate, [], []) }
   }
   const month = page === "reports" ? context.month : getCurrentMonth()

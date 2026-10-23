@@ -2,6 +2,7 @@
 
 import { PageInsights } from "./page-insights"
 import { MonthPicker } from "./month-picker"
+import { RecordOccurrence } from "./record-occurrence"
 import { useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useLanguage } from "./language-provider"
@@ -265,10 +266,13 @@ export function FinancialCalendar() {
                         {t(event.type)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       <span className="text-sm font-semibold tabular-nums">
                         {formatCurrency(event.amount)}
                       </span>
+                      {event.source === "recurring" && event.scheduleId && (
+                        <RecordOccurrence occurrence={{ ...event, scheduleId: event.scheduleId }} accountName={event.accountName ?? undefined} />
+                      )}
                       <Button asChild variant="outline" size="sm">
                         <a
                           href={
