@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["unamicably-miracidial-jenette.ngrok-free.dev"],
   turbopack: {
     root: process.cwd(),
   },

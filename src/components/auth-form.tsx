@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, type FormEvent } from "react"
+import { useRef, useState, useSyncExternalStore, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff } from "lucide-react"
@@ -12,6 +12,10 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 
+function subscribeToClientReady() {
+  return () => {}
+}
+
 export function AuthForm({
   mode,
   next,
@@ -22,6 +26,7 @@ export function AuthForm({
   invalidLink?: boolean
 }) {
   const { t } = useLanguage()
+  const clientReady = useSyncExternalStore(subscribeToClientReady, () => true, () => false)
   const router = useRouter()
   const signingUp = mode === "sign-up"
   const [email, setEmail] = useState("")
@@ -160,7 +165,7 @@ export function AuthForm({
               <div className="mt-8 space-y-4">
                 <Button
                   onClick={resend}
-                  disabled={busy}
+                  disabled={!clientReady || busy}
                   variant="outline"
                   className="min-h-11 w-full"
                 >
@@ -174,6 +179,7 @@ export function AuthForm({
               </div>
             ) : (
               <form
+                method="post"
                 onSubmit={submit}
                 className="mt-8 space-y-5"
                 aria-busy={busy}
@@ -187,7 +193,7 @@ export function AuthForm({
                     autoComplete="email"
                     required
                     maxLength={254}
-                    disabled={busy}
+                    disabled={!clientReady || busy}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="h-12 bg-white"
@@ -206,7 +212,7 @@ export function AuthForm({
                       required
                       minLength={signingUp ? 8 : undefined}
                       maxLength={128}
-                      disabled={busy}
+                      disabled={!clientReady || busy}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       aria-describedby={signingUp ? "password-hint" : undefined}
@@ -248,7 +254,7 @@ export function AuthForm({
                       required
                       minLength={8}
                       maxLength={128}
-                      disabled={busy}
+                      disabled={!clientReady || busy}
                       value={confirmation}
                       onChange={(e) => setConfirmation(e.target.value)}
                       aria-invalid={error === "authPasswordMismatch"}
@@ -263,7 +269,7 @@ export function AuthForm({
                 )}
                 <Button
                   type="submit"
-                  disabled={busy}
+                  disabled={!clientReady || busy}
                   className="min-h-12 w-full bg-brand text-white hover:bg-brand-active"
                 >
                   {t(busy ? "authWorking" : signingUp ? "signUp" : "signIn")}
@@ -273,7 +279,7 @@ export function AuthForm({
                     type="button"
                     variant="outline"
                     onClick={resend}
-                    disabled={busy || !email.trim()}
+                    disabled={!clientReady || busy || !email.trim()}
                     className="min-h-11 w-full"
                   >
                     {t("authResend")}
