@@ -12,6 +12,12 @@ Finance Tracker uses Supabase Auth email/password authentication and cookie-base
 
 See the official [Supabase SSR guide](https://supabase.com/docs/guides/auth/server-side/creating-a-client) and [Next.js auth tutorial](https://supabase.com/docs/guides/getting-started/tutorials/with-nextjs).
 
+### Testing through ngrok
+
+When sharing `next dev` through a tunnel, add the tunnel's exact hostname (without `https://` or a port) to `allowedDevOrigins` in `next.config.ts`, then restart the dev server. Update the entry when the tunnel hostname changes; avoid allowing every ngrok domain. A blocked development WebSocket can leave the page visible without activating its form. Check that the show-password button responds before testing sign in. Auth fields remain disabled until the client activates, and the form uses POST so a native submission cannot put credentials in the URL.
+
+Email/password sign-in calls Supabase directly and then navigates to a local dashboard path. Email confirmation separately needs the tunnel's `/auth/confirm` URL in the Supabase redirect allowlist; use the tunnel as Site URL when testing the existing confirmation email template. These URL settings do not repair an inactive client form.
+
 ## Apply ownership migrations
 
 Back up the financial database and stop application writes first. Use a Direct connection or Session pooler for migrations. Apply `0006_auth_ownership` and `0007_auth_policies` with `npm run db:migrate`; verify with `npm run db:migrate -- --check`.
