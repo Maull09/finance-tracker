@@ -20,7 +20,7 @@ nullable columns. If a migration finished but its readiness check failed, inspec
 the reported difference and rerun `npm run db:check` after correcting the checkout
 or verifier; an already-recorded migration does not need to be reapplied.
 
-Generating migrations is not applying them. An account endpoint can succeed while the dashboard fails because `stock_trades` has not been created. This version expects 20 application tables and migration `0013_groovy_talkback`, including AI conversations/drafts, transaction groups, four-decimal numeric trade quantities/prices, and private ownership policies. Migration 0005 widens only the trade price column from `numeric(14, 2)` to `numeric(16, 4)`. Migrations 0006–0007 add ownership and RLS without assigning existing rows; follow [authentication setup](authentication.md) to assign legacy records to a confirmed owner. Back up before applying migrations.
+Generating migrations is not applying them. An account endpoint can succeed while the dashboard fails because `stock_trades` has not been created. This version expects 20 application tables and migration `0014_brown_santa_claus`, including AI conversations/drafts, transaction groups and subcategories, four-decimal numeric trade quantities/prices, and private ownership policies. Migration 0005 widens only the trade price column from `numeric(14, 2)` to `numeric(16, 4)`. Migrations 0006–0007 add ownership and RLS without assigning existing rows; follow [authentication setup](authentication.md) to assign legacy records to a confirmed owner. Back up before applying migrations.
 
 Migrations 0009–0010 add indexes for ownership-scoped pagination, date/type filters, account references, and payment/contribution joins. They do not update financial rows or change RLS. Run the normal migration workflow before deploying the optimized queries; generating the SQL alone does not install the indexes. These transactional `CREATE INDEX` statements can block writes while building, so use a maintenance window for a large database.
 
@@ -31,6 +31,8 @@ revision writes. Financial rows and amounts are preserved. Apply it before enabl
 `REDIS_URL`; see [local Redis setup](development.md#local-redis-cache).
 
 Migration 0012 adds the AI tables; see [AI setup](ai-assistant.md) for the private receipt bucket. Migration 0013 adds nullable `transactions.group_name` with its name-validation constraint. The grouping branch originally used migration number 0011, which is already occupied by Redis in main. This combined checkout preserves Redis 0011 and AI 0012, and places grouping at 0013. Run the normal migration workflow even if the grouping column was already installed from that branch: 0013 accepts the existing column and named constraint without rewriting transactions or dropping group names, then records the combined migration history.
+
+Migration 0014 adds nullable `subcategory` columns to transactions and recurring transactions. Apply it before serving the category/subcategory forms. Existing amounts, main categories, groups, and schedules are preserved; old rows have no subcategory. Budgets and reports continue to aggregate the main category. New linked debt payments use Utang / Pembayaran utang and Piutang / Penerimaan piutang; historical payment categories are retained.
 
 ## Existing legacy tables with empty migration history
 

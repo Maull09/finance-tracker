@@ -19,7 +19,7 @@ export const insightContextSchema = z.discriminatedUnion("page", [
   z.object({ page: z.literal(["budget", "reports", "calendar"]), month }).strict(),
   z.object({ page: z.literal("transactions"), filters: z.string().max(2000).refine((value) => {
     const params = new URLSearchParams(value)
-    return [...params.keys()].every((key) => ["search", "type", "account", "group", "ungrouped", "from", "to"].includes(key)) && Boolean(parseTransactionFilters(params))
+    return [...params.keys()].every((key) => ["search", "type", "category", "subcategory", "account", "group", "ungrouped", "from", "to"].includes(key)) && Boolean(parseTransactionFilters(params))
   }) }).strict(),
   z.object({ page: z.literal("financialHealth"), input: healthInputSchema }).strict(),
   z.object({ page: z.literal("planning"), endDate: z.string().refine((value) => isDate(value) && value >= getToday() && Date.parse(value) - Date.parse(getToday()) <= 730 * 86400000) }).strict(),
@@ -36,6 +36,8 @@ export function canonicalInsightContext(context: InsightContext) {
   const filters = parseTransactionFilters(new URLSearchParams(context.filters))!
   const params = new URLSearchParams()
   if (filters.search) params.set("search", filters.search)
+  if (filters.category) params.set("category", filters.category)
+  if (filters.subcategory) params.set("subcategory", filters.subcategory)
   if (filters.type !== "all") params.set("type", filters.type)
   if (filters.accountId) params.set("account", String(filters.accountId))
   if (filters.groupName) params.set("group", filters.groupName)

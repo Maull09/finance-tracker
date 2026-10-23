@@ -1,7 +1,6 @@
 export const accountTypes = ["cash", "bank", "investment", "ewallet", "other"] as const
 export const transactionTypes = ["income", "expense", "transfer"] as const
-export const incomeCategories = ["Gaji Utama", "Freelance", "Investasi", "Bonus", "Lainnya"] as const
-export const expenseCategories = ["Makanan", "Transportasi", "Hiburan", "Belanja", "Tagihan", "Kesehatan", "Pendidikan", "Lainnya"] as const
+export { incomeCategories, expenseCategories } from "./categories"
 
 export type AccountType = (typeof accountTypes)[number]
 export type TransactionType = (typeof transactionTypes)[number]

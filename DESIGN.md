@@ -87,6 +87,8 @@ Describe what a feature calculates or changes directly, in both languages. State
 
 Transaction groups collect records for a named activity, such as a trip, across spending categories. Each transaction has one optional group. Show group spending totals and transaction counts for the full filtered period, with an action to view the group's records. Use the existing blue selection treatment, Geist typography, quiet borders, and stacked layouts on mobile; keep amounts prominent and group names able to wrap.
 
+Transaction categorization uses a main category and one optional subcategory, for example Drinks / Coffee. Assumption: users want consistent everyday categories on desktop and mobile without having to configure a taxonomy. Show labelled category and subcategory controls in that order, reset the subcategory when its parent or transaction type changes, and disable it until the chosen category has options. Show the subcategory below the main category in transaction history and support exact filters for both. Budgets and reports continue to total the main category, including all its subcategories. Debt and receivable categories classify cash flow only; explain that outstanding balances and linked payments belong in Debts & receivables. Preserve historical categories and records. Use existing Geist, blue tokens, quiet borders, 44px controls, and stacked mobile forms.
+
 Within group cards, expenses and available income use matching label-and-amount blocks: small muted labels above equally prominent tabular amounts, Negative for expenses and Positive for income. Place the blocks side by side only when the card has enough width; otherwise stack them. Keep the view-transactions action aligned at the bottom of each card.
 
 ### Expense calculator

@@ -34,7 +34,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select"
-import { getToday, expenseCategories } from "@/lib/finance"
+import { getToday } from "@/lib/finance"
+import { CategoryFields } from "./category-fields"
 import { useRemoteData } from "@/lib/use-remote-data"
 import { requestJson, jsonBody } from "@/lib/client-api"
 import type { FundsData, SinkingFund, CashAccount } from "@/lib/planning-types"
@@ -441,6 +442,7 @@ function FundEntryForm({
   const [amount, setAmount] = useState("")
   const [note, setNote] = useState("")
   const [category, setCategory] = useState("Lainnya")
+  const [subcategory, setSubcategory] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const limit =
@@ -469,7 +471,7 @@ function FundEntryForm({
     try {
       await requestJson(
         "/api/sinking-funds/" + fund.id + "/entries",
-        jsonBody("POST", { kind, amount, note, category }),
+        jsonBody("POST", { kind, amount, note, category, subcategory }),
       )
       setOpen(false)
       setAmount("")
@@ -497,7 +499,7 @@ function FundEntryForm({
           {t(kind)}
         </Button>
       </DialogTrigger>
-      <DialogContent showCloseButton={!busy}>
+      <DialogContent showCloseButton={!busy} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {t(
@@ -534,20 +536,8 @@ function FundEntryForm({
               />
             </Field>
             {kind === "spend" && (
-              <Field id={id + "-category"} label={t("category")} required>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger id={id + "-category"}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {expenseCategories.map((item) => (
-                      <SelectItem key={item} value={item}>
-                        {t(item)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
+              <CategoryFields id={id} type="expense" category={category} subcategory={subcategory}
+                onChange={(category, subcategory) => { setCategory(category); setSubcategory(subcategory) }} />
             )}
             <Field id={id + "-note"} label={t("note")}>
               <Input

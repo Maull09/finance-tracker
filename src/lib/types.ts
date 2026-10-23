@@ -17,6 +17,7 @@ export type Transaction = {
   type: TransactionType
   amount: number
   category: string
+  subcategory: string | null
   groupName: string | null
   description: string | null
   date: string

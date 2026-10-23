@@ -9,6 +9,7 @@ import { jsonBody, requestJson } from "@/lib/client-api"
 import { confirmedDraftSchema, type AiDraftInput } from "@/lib/ai/validation"
 import type { AiDraft } from "@/lib/ai/types"
 import type { Account } from "@/lib/types"
+import { CategoryFields } from "./category-fields"
 
 export const aiSelectClass = "min-h-11 w-full rounded-lg border bg-card px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50"
 
@@ -63,6 +64,7 @@ export function AiDraftForm({ draft, accounts, disabled, onSaved, onBusy }: {
             <Field id={prefix + "-type"} label={t("aiType")}>
               <select id={prefix + "-type"} className={aiSelectClass} value={data.type} onChange={(event) => setData({
                 ...data, type: event.target.value as AiDraftInput["type"], destinationAccountId: null,
+                category: event.target.value === "transfer" ? "Transfer antar akun" : "", subcategory: null,
               })}>
                 {["income", "expense", "transfer"].map((type) => <option key={type} value={type}>{t(type)}</option>)}
               </select>
@@ -71,9 +73,8 @@ export function AiDraftForm({ draft, accounts, disabled, onSaved, onBusy }: {
               <Input id={prefix + "-amount"} type="number" inputMode="numeric" required min="1" max="2147483647" step="1"
                 value={data.amount ?? ""} onChange={(event) => setData({ ...data, amount: event.target.value === "" ? null : Number(event.target.value) })} />
             </Field>
-            <Field id={prefix + "-category"} label={t("aiCategory")} required>
-              <Input id={prefix + "-category"} required maxLength={120} value={data.category} onChange={(event) => setData({ ...data, category: event.target.value })} />
-            </Field>
+            {data.type !== "transfer" && <CategoryFields id={prefix} type={data.type} category={data.category} subcategory={data.subcategory}
+              onChange={(category, subcategory) => setData({ ...data, category, subcategory })} />}
             <Field id={prefix + "-date"} label={t("aiDate")} required>
               <Input id={prefix + "-date"} type="date" required value={data.date ?? ""} onChange={(event) => setData({ ...data, date: event.target.value || null })} />
             </Field>

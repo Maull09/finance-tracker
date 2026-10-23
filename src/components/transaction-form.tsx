@@ -6,6 +6,7 @@ import { ErrorNotice, Field, SubmitButton, useFeedback } from "./feedback"
 import { useLanguage } from "./language-provider"
 import { Button } from "./ui/button"
 import { TransactionGroupField } from "./transaction-group-field"
+import { CategoryFields } from "./category-fields"
 import {
   Dialog,
   DialogContent,
@@ -24,19 +25,11 @@ import {
   SelectValue,
 } from "./ui/select"
 import {
-  expenseCategories,
   getToday,
-  incomeCategories,
   type TransactionType,
 } from "@/lib/finance"
 import { jsonBody, requestJson } from "@/lib/client-api"
 import type { Account, Transaction } from "@/lib/types"
-
-const categories: Record<TransactionType, readonly string[]> = {
-  income: incomeCategories,
-  expense: expenseCategories,
-  transfer: ["Transfer antar akun"],
-}
 
 export function TransactionForm({
   accounts,
@@ -56,6 +49,7 @@ export function TransactionForm({
   const [type, setType] = useState<TransactionType>("expense")
   const [amount, setAmount] = useState("")
   const [category, setCategory] = useState("")
+  const [subcategory, setSubcategory] = useState<string | null>(null)
   const [accountId, setAccountId] = useState("")
   const [destinationAccountId, setDestinationAccountId] = useState("")
   const [description, setDescription] = useState("")
@@ -72,6 +66,7 @@ export function TransactionForm({
     setType(transaction?.type ?? "expense")
     setAmount(transaction ? String(transaction.amount) : "")
     setCategory(transaction?.category ?? "")
+    setSubcategory(transaction?.subcategory ?? null)
     setAccountId(
       transaction
         ? String(transaction.accountId)
@@ -95,6 +90,7 @@ export function TransactionForm({
   function changeType(value: TransactionType) {
     setType(value)
     setCategory(value === "transfer" ? "Transfer antar akun" : "")
+    setSubcategory(null)
     setDestinationAccountId("")
   }
 
@@ -125,6 +121,7 @@ export function TransactionForm({
         type === transaction.type &&
         Number(amount) === transaction.amount &&
         category === transaction.category &&
+        subcategory === transaction.subcategory &&
         Number(accountId) === transaction.accountId &&
         (type === "transfer" ? Number(destinationAccountId) : null) ===
           transaction.destinationAccountId &&
@@ -142,6 +139,7 @@ export function TransactionForm({
                 type,
                 amount,
                 category,
+                subcategory,
                 accountId,
                 destinationAccountId:
                   type === "transfer" ? destinationAccountId : null,
@@ -161,13 +159,6 @@ export function TransactionForm({
       setLoading(false)
     }
   }
-
-  const availableCategories =
-    transaction &&
-    !categories[type].includes(transaction.category) &&
-    transaction.type === type
-      ? [transaction.category, ...categories[type]]
-      : categories[type]
 
   return (
     <Dialog open={open} onOpenChange={changeOpen}>
@@ -245,20 +236,8 @@ export function TransactionForm({
               )}
             </Field>
             {type !== "transfer" && (
-              <Field id={id + "-category"} label={t("category")} required>
-                <Select value={category} onValueChange={setCategory} required>
-                  <SelectTrigger id={id + "-category"}>
-                    <SelectValue placeholder={t("chooseCategory")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableCategories.map((item) => (
-                      <SelectItem key={item} value={item}>
-                        {t(item)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
+              <CategoryFields id={id} type={type} category={category} subcategory={subcategory}
+                onChange={(category, subcategory) => { setCategory(category); setSubcategory(subcategory) }} />
             )}
             <Field
               id={id + "-account"}

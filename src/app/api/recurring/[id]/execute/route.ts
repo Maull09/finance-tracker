@@ -33,6 +33,7 @@ export async function POST(_: NextRequest, { params }: RouteContext) {
           type: recurring.type,
           amount: recurring.amount,
           category: recurring.category,
+          subcategory: recurring.subcategory,
           description: recurring.description,
           date: today,
           accountId: recurring.accountId,

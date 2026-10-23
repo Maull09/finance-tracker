@@ -45,6 +45,7 @@ export function financeTools(userId: string, drafts: AiDraftInput[]) {
     return JSON.stringify(await connection.select({
       date: transactions.date, type: transactions.type, amount: transactions.amount,
       category: transactions.category, description: transactions.description,
+      subcategory: transactions.subcategory,
       accountId: transactions.accountId, destinationAccountId: transactions.destinationAccountId,
     }).from(transactions).where(and(gte(transactions.date, from), lte(transactions.date, to)))
       .orderBy(desc(transactions.date), desc(transactions.id)).limit(50))

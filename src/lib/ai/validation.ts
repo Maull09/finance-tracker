@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { isDate } from "@/lib/finance"
+import { expenseCategories, isValidSubcategory } from "@/lib/categories"
 
 const amount = z.number().int().positive().max(2_147_483_647)
 const accountId = z.number().int().positive().max(2_147_483_647)
@@ -9,6 +10,7 @@ export const aiDraftSchema = z.object({
   type: z.enum(["income", "expense", "transfer"]),
   amount: amount.nullable(),
   category: z.string().trim().min(1).max(120),
+  subcategory: z.string().trim().min(1).max(120).nullable().optional(),
   description: z.string().trim().max(1000),
   date: date.nullable(),
   accountId: accountId.nullable(),
@@ -20,6 +22,9 @@ export type AiDraftInput = z.infer<typeof aiDraftSchema>
 export const confirmedDraftSchema = aiDraftSchema.extend({
   amount, date, accountId,
 }).superRefine((value, context) => {
+  if (!isValidSubcategory(value.type, value.category, value.subcategory)) {
+    context.addIssue({ code: "custom", path: ["subcategory"], message: "invalidInput" })
+  }
   if (value.type === "transfer" &&
       (!value.destinationAccountId || value.destinationAccountId === value.accountId)) {
     context.addIssue({ code: "custom", path: ["destinationAccountId"], message: "invalidInput" })
@@ -40,7 +45,7 @@ export const receiptSchema = z.object({
   total: amount.nullable(),
   currency: z.string().max(12).nullable(),
   date: date.nullable(),
-  category: z.enum(["Makanan", "Transportasi", "Hiburan", "Belanja", "Tagihan", "Kesehatan", "Pendidikan", "Lainnya"]),
+  category: z.enum(expenseCategories),
   notes: z.string().max(1000),
 }).strict()
 
