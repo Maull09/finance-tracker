@@ -28,7 +28,7 @@ export function QuickGuide() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-primary" />
+            <BookOpen className="h-5 w-5 text-brand-active" />
             {t("help")}
           </DialogTitle>
           <DialogDescription>{t("helpDescription")}</DialogDescription>

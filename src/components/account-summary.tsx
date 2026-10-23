@@ -141,7 +141,7 @@ function ReconcileAccount({ account }: { account: Summary }) {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-primary">
+        <Button variant="ghost" size="sm" className="text-brand-active">
           {t("reconcileBalance")}
         </Button>
       </DialogTrigger>

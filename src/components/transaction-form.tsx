@@ -230,7 +230,7 @@ export function TransactionForm({
                 required
               />
               {Number(amount) > 0 && (
-                <p className="text-sm font-medium text-primary">
+                <p className="text-sm font-medium text-brand-active">
                   {formatCurrency(Number(amount))}
                 </p>
               )}

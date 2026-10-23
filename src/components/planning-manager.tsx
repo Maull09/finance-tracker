@@ -239,7 +239,7 @@ export function PlanningManager() {
                   className="flex flex-col justify-between gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
                 >
                   <div className="flex items-start gap-3">
-                    <CalendarClock className="mt-1 h-5 w-5 shrink-0 text-primary" />
+                    <CalendarClock className="mt-1 h-5 w-5 shrink-0 text-brand-active" />
                     <div>
                       <p className="font-medium">{item.name}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{t(item.category)}{item.subcategory ? " / " + t(item.subcategory) : ""}</p>

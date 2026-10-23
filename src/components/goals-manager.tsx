@@ -335,7 +335,7 @@ function GoalCard({ goal, accounts }: { goal: Goal; accounts: Account[] }) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <CardTitle className="break-words">
-              <Target className="mr-2 inline h-4 w-4 text-primary" />
+              <Target className="mr-2 inline h-4 w-4 text-brand-active" />
               {goal.title}
             </CardTitle>
             {goal.description && (

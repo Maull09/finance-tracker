@@ -337,7 +337,7 @@ function BudgetCard({
           </span>
         </div>
         {(budget.carryover ?? 0) > 0 && (
-          <p className="text-xs text-primary">
+          <p className="text-xs text-brand-active">
             {t("includesRollover", {
               amount: formatCurrency(budget.carryover ?? 0),
             })}
