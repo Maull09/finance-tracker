@@ -42,6 +42,7 @@ export async function readTransactionPage(
         'id', item.id, 'userId', item.user_id, 'type', item.type,
         'amount', item.amount, 'category', item.category, 'description', item.description,
         'groupName', item.group_name, 'subcategory', item.subcategory,
+        'recurringId', item.recurring_id, 'scheduledDate', item.scheduled_date,
         'date', item.date, 'accountId', item.account_id,
         'destinationAccountId', item.destination_account_id,
         'createdAt', to_char(item.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')

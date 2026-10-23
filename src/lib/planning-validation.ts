@@ -156,6 +156,14 @@ export function parseRecurring(value: unknown) {
   }
 }
 
+export function parseOccurrenceRecording(value: unknown) {
+  const body = recordInput(value)
+  if (!isDate(body.scheduledDate) || body.scheduledDate < "1900-01-01" || body.scheduledDate > "2100-12-31" ||
+      !isDate(body.date) || body.date < "1900-01-01" || body.date > getToday())
+    throw new FinanceError("invalidInput")
+  return { scheduledDate: body.scheduledDate, date: body.date }
+}
+
 export function parseSimulation(value: unknown) {
   const body = recordInput(value)
   const today = getToday()

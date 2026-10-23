@@ -41,6 +41,8 @@ import {
   SelectValue,
 } from "./ui/select"
 import { getToday } from "@/lib/finance"
+import { nextPendingOccurrence } from "@/lib/planning"
+import { RecordOccurrence } from "./record-occurrence"
 import { CategoryFields } from "./category-fields"
 import { requestJson, jsonBody } from "@/lib/client-api"
 import { useRemoteData } from "@/lib/use-remote-data"
@@ -60,6 +62,8 @@ type Recurring = {
   destinationAccountId: number | null
   description: string | null
   lastExecutedDate: string | null
+  recordedThroughDate: string | null
+  recordedDates: string[]
 }
 type Forecast = {
   payday: string
@@ -79,7 +83,6 @@ export function PlanningManager() {
   const [forecastBusy, setForecastBusy] = useState(false)
   const [forecastError, setForecastError] = useState("")
   const [deleting, setDeleting] = useState<Recurring | null>(null)
-  const [recording, setRecording] = useState<Recurring | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
 
@@ -103,19 +106,18 @@ export function PlanningManager() {
       setForecastBusy(false)
     }
   }
-  async function mutateSchedule(action: "delete" | "record") {
-    const item = action === "delete" ? deleting : recording
+  async function deleteSchedule() {
+    const item = deleting
     if (!item || busy) return
     setBusy(true)
     setError("")
     try {
       await requestJson(
-        "/api/recurring/" + item.id + (action === "record" ? "/execute" : ""),
-        { method: action === "record" ? "POST" : "DELETE" },
+        "/api/recurring/" + item.id,
+        { method: "DELETE" },
       )
-      notify(action === "record" ? "scheduleRecorded" : "scheduleDeleted")
+      notify("scheduleDeleted")
       setDeleting(null)
-      setRecording(null)
       setForecast(null)
       window.dispatchEvent(new Event("finance-data-changed"))
     } catch (reason) {
@@ -233,77 +235,60 @@ export function PlanningManager() {
           </CardHeader>
           <CardContent>
             <ul className="divide-y">
-              {records.data.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex flex-col justify-between gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
-                >
-                  <div className="flex items-start gap-3">
-                    <CalendarClock className="mt-1 h-5 w-5 shrink-0 text-primary" />
-                    <div>
-                      <p className="font-medium">{item.name}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{t(item.category)}{item.subcategory ? " / " + t(item.subcategory) : ""}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {t(item.type)} · {formatCurrency(item.amount)} ·{" "}
-                        {t(item.frequency)}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {
-                          accounts.find(
-                            (account) => account.id === item.accountId,
-                          )?.name
-                        }{" "}
-                        · {t("starts")} {formatDate(item.startDate)}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {item.lastExecutedDate
-                          ? t("lastRecorded") +
-                            ": " +
-                            formatDate(item.lastExecutedDate)
-                          : t("notRecorded")}
-                      </p>
+              {records.data.map((item) => {
+                const occurrence = nextPendingOccurrence(item, getToday())
+                return (
+                  <li
+                    key={item.id}
+                    className="flex flex-col justify-between gap-4 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
+                  >
+                    <div className="flex items-start gap-3">
+                      <CalendarClock className="mt-1 h-5 w-5 shrink-0 text-primary" />
+                      <div>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{t(item.category)}{item.subcategory ? " / " + t(item.subcategory) : ""}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {t(item.type)} · {formatCurrency(item.amount)} ·{" "}
+                          {t(item.frequency)}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {
+                            accounts.find(
+                              (account) => account.id === item.accountId,
+                            )?.name
+                          }{" "}
+                          · {t("starts")} {formatDate(item.startDate)}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {item.lastExecutedDate
+                            ? t("lastRecorded") +
+                              ": " +
+                              formatDate(item.lastExecutedDate)
+                            : t("notRecorded")}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <AddSchedule accounts={accounts} schedule={item} />
-                    <Button
-                      variant="outline"
-                      disabled={
-                        item.startDate > getToday() ||
-                        Boolean(item.endDate && item.endDate < getToday()) ||
-                        item.lastExecutedDate === getToday()
-                      }
-                      onClick={() => {
-                        setRecording(item)
-                        setError("")
-                      }}
-                    >
-                      {item.lastExecutedDate === getToday()
-                        ? t("recordAlreadyDone")
-                        : item.startDate > getToday()
-                          ? t("scheduleNotStarted", {
-                              date: formatDate(item.startDate),
-                            })
-                          : item.endDate && item.endDate < getToday()
-                            ? t("scheduleEnded", {
-                                date: formatDate(item.endDate),
-                              })
-                            : t("recordNow")}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t("delete") + " " + item.name}
-                      onClick={() => {
-                        setDeleting(item)
-                        setError("")
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </li>
-              ))}
+                    <div className="flex flex-wrap gap-2">
+                      <AddSchedule accounts={accounts} schedule={item} />
+                      {occurrence ? (
+                        <RecordOccurrence occurrence={occurrence} chooseScheduledDate
+                          accountName={accounts.find((account) => account.id === item.accountId)?.name} />
+                      ) : <Button variant="outline" disabled>{t("noPendingOccurrences")}</Button>}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={t("delete") + " " + item.name}
+                        onClick={() => {
+                          setDeleting(item)
+                          setError("")
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           </CardContent>
         </Card>
@@ -321,52 +306,8 @@ export function PlanningManager() {
         description={t("deleteScheduleHint")}
         busy={busy}
         error={error}
-        onConfirm={() => void mutateSchedule("delete")}
+        onConfirm={() => void deleteSchedule()}
       />
-      <Dialog
-        open={Boolean(recording)}
-        onOpenChange={(value) => {
-          if (!value && !busy) setRecording(null)
-        }}
-      >
-        <DialogContent showCloseButton={!busy}>
-          <DialogHeader>
-            <DialogTitle>{t("recordNow")}</DialogTitle>
-            <DialogDescription>{t("recordScheduleHint")}</DialogDescription>
-          </DialogHeader>
-          {recording && (
-            <div className="rounded-lg bg-muted p-4">
-              <p className="font-semibold">{recording.name}</p>
-              <p className="mt-2 text-sm">
-                {t(recording.type)} · {formatCurrency(recording.amount)} ·{" "}
-                {formatDate(getToday())}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {
-                  accounts.find((account) => account.id === recording.accountId)
-                    ?.name
-                }
-              </p>
-            </div>
-          )}
-          <ErrorNotice message={error} />
-          <DialogFooter>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => setRecording(null)}
-            >
-              {t("cancel")}
-            </Button>
-            <Button
-              disabled={busy}
-              onClick={() => void mutateSchedule("record")}
-            >
-              {t(busy ? "saving" : "recordNow")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

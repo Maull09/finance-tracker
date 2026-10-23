@@ -10,6 +10,8 @@ import { FinanceError } from "@/lib/finance-errors"
 import { isMonth, getNextMonthStart } from "@/lib/finance"
 import { scheduleOccurrences } from "@/lib/planning"
 import { debtSummaryQuery } from "@/lib/server/financial-queries"
+import { recurringSchedulesQuery } from "@/lib/server/recurring-queries"
+import type { CalendarEvent } from "@/lib/planning-types"
 
 export async function GET(request: NextRequest) {
   return authenticatedResponse(async (db) => {
@@ -25,24 +27,18 @@ export async function GET(request: NextRequest) {
     end.setUTCDate(end.getUTCDate() - 1)
     const to = end.toISOString().slice(0, 10)
     const [schedules, obligations, funds] = await Promise.all([
-      db.select().from(recurringTransactions).where(and(
+      recurringSchedulesQuery(db).where(and(
         lte(recurringTransactions.startDate, to),
         or(isNull(recurringTransactions.endDate), gte(recurringTransactions.endDate, from)),
       )),
       debtSummaryQuery(db).where(and(gte(debts.dueDate, from), lte(debts.dueDate, to))),
       db.select().from(sinkingFunds).where(and(gte(sinkingFunds.targetDate, from), lte(sinkingFunds.targetDate, to))),
     ])
-    const events: Array<{
-      id: string
-      name: string
-      type: string
-      amount: number
-      date: string
-      source: string
-    }> = schedules.flatMap((schedule) =>
+    const events: CalendarEvent[] = schedules.flatMap((schedule) =>
       scheduleOccurrences(schedule, from, to).map((item) => ({
         ...item,
         id: `schedule-${item.scheduleId}-${item.date}`,
+        accountName: schedule.accountName,
         source: "recurring",
       })),
     )

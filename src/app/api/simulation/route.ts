@@ -6,6 +6,7 @@ import { parseSimulation } from "@/lib/planning-validation"
 import { projectNetWorth, simulateCashflow } from "@/lib/planning"
 import { getToday } from "@/lib/finance"
 import { readSimulationBalance } from "@/lib/server/simulation-queries"
+import { recurringSchedulesQuery } from "@/lib/server/recurring-queries"
 
 export async function GET(request: Request) {
   return authenticatedResponse(async (db) => {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     const today = getToday()
     const [balance, schedules] = await Promise.all([
       readSimulationBalance(db),
-      db.select().from(recurringTransactions).where(and(
+      recurringSchedulesQuery(db).where(and(
         lte(recurringTransactions.startDate, input.endDate),
         or(isNull(recurringTransactions.endDate), gte(recurringTransactions.endDate, today)),
       )),

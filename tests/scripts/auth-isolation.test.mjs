@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs"
 import pg from "pg"
 import { drizzle } from "drizzle-orm/node-postgres"
 import { and, eq, isNotNull, isNull } from "drizzle-orm"
-import { aiDrafts, transactions } from "@/db/schema"
+import { aiDrafts, transactions, recurringTransactions } from "@/db/schema"
 import { decideDraft } from "@/lib/ai/confirmation"
 import { readLedger, readReservations } from "@/lib/server/ledger"
 import { readBalanceLedger, readReservedCash, accountSummaryQuery, goalSummaryQuery, debtSummaryQuery } from "@/lib/server/financial-queries"
@@ -20,6 +20,9 @@ import { verifyAuthReadiness } from "../../scripts/auth-readiness.mjs"
 import { ownedTables } from "../../scripts/auth-tables.mjs"
 import { apiCacheKey, readApiCache, writeApiCache } from "@/lib/server/api-cache"
 import { getRedisClient } from "@/lib/server/redis"
+import { recurringSchedulesQuery } from "@/lib/server/recurring-queries"
+import { recordRecurringOccurrence } from "@/lib/server/recurring-recording"
+import { scheduleOccurrences } from "@/lib/planning"
 
 const testUrl = process.env.AUTH_TEST_DATABASE_URL
 const redisTestUrl = process.env.REDIS_TEST_URL
@@ -31,6 +34,8 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
   let accountA
   let accountB
   let legacyId
+  let legacyScheduleId
+  let legacyTransactionId
   let redisCacheUsed = false
 
   async function asUser(id, action) {
@@ -64,6 +69,10 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
         await client.query("INSERT INTO stock_instruments (symbol, name) VALUES ('BBRI', 'BBRI')")
         await client.query("INSERT INTO stock_watchlist (symbol, note) VALUES ('BBRI', 'Legacy note')")
       }
+      if (migration.idx === 15) {
+        legacyScheduleId = (await client.query("INSERT INTO recurring_transactions(name,type,amount,category,account_id,start_date,last_executed_date) VALUES ('Old schedule','expense',5000,'Makanan',$1,'2026-08-31','2026-09-30') RETURNING id", [legacyId])).rows[0].id
+        legacyTransactionId = (await client.query("INSERT INTO transactions(type,amount,category,date,account_id) VALUES ('expense',5000,'Makanan','2026-09-20',$1) RETURNING id", [legacyId])).rows[0].id
+      }
       await client.query("BEGIN")
       for (const statement of readFileSync(`drizzle/${migration.tag}.sql`, "utf8").split("--> statement-breakpoint"))
         await client.query(statement)
@@ -88,7 +97,81 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
   it("applies migrations without losing legacy amounts or watchlist notes", async () => {
     expect((await client.query("SELECT initial_balance, user_id FROM accounts WHERE id = $1", [legacyId])).rows[0]).toEqual({ initial_balance: 12345, user_id: null })
     expect((await client.query("SELECT note FROM stock_watchlist")).rows[0].note).toBe("Legacy note")
-    expect(schemaIssues(loadSnapshot("0014"), await readDatabaseSchema(client))).toEqual([])
+    expect(schemaIssues(loadSnapshot("0015"), await readDatabaseSchema(client))).toEqual([])
+    expect((await client.query("SELECT last_executed_date::text, recorded_through_date::text FROM recurring_transactions WHERE id=$1", [legacyScheduleId])).rows[0])
+      .toEqual({ last_executed_date: "2026-09-30", recorded_through_date: "2026-09-30" })
+    expect((await client.query("SELECT amount, recurring_id, scheduled_date FROM transactions WHERE id=$1", [legacyTransactionId])).rows[0])
+      .toEqual({ amount: 5000, recurring_id: null, scheduled_date: null })
+  })
+
+  it("records early and late periods once, preserves other periods, and uses actual dates for cash flow", async () => {
+    await asUser(userA, async () => {
+      await client.query("SAVEPOINT occurrence_fixture")
+      try {
+        const connection = drizzle(client)
+        const account = (await client.query("INSERT INTO accounts(name,type,initial_balance) VALUES ('Occurrence cash','cash',1000000) RETURNING id")).rows[0].id
+        const id = (await client.query("INSERT INTO recurring_transactions(name,type,amount,category,subcategory,account_id,start_date,end_date) VALUES ('Coffee','expense',25000,'Minuman','Kopi',$1,'2026-01-31','2026-03-31') RETURNING id", [account])).rows[0].id
+        const readSchedule = async () => (await recurringSchedulesQuery(connection).where(eq(recurringTransactions.id, id)))[0]
+        const early = await recordRecurringOccurrence(connection, id, { scheduledDate: "2026-03-31", date: "2026-01-20" })
+        expect(early).toMatchObject({ date: "2026-01-20", scheduledDate: "2026-03-31", amount: 25000, subcategory: "Kopi" })
+        expect(scheduleOccurrences(await readSchedule(), "2026-01-01", "2026-04-30").map((item) => item.date)).toEqual(["2026-01-31", "2026-02-28"])
+        const late = await recordRecurringOccurrence(connection, id, { scheduledDate: "2026-01-31", date: "2026-04-15" })
+        await recordRecurringOccurrence(connection, id, { scheduledDate: "2026-02-28", date: "2026-04-15" })
+        expect((await client.query("SELECT scheduled_date::text FROM transactions WHERE recurring_id=$1 ORDER BY scheduled_date", [id])).rows)
+          .toEqual([{ scheduled_date: "2026-01-31" }, { scheduled_date: "2026-02-28" }, { scheduled_date: "2026-03-31" }])
+        expect((await readSchedule()).recordedDates.sort()).toEqual(["2026-01-31", "2026-02-28", "2026-03-31"])
+        expect(scheduleOccurrences(await readSchedule(), "2026-01-01", "2026-04-30")).toEqual([])
+        await expect(recordRecurringOccurrence(connection, id, { scheduledDate: "2026-03-31", date: "2026-04-16" })).rejects.toMatchObject({ code: "scheduleAlreadyRecorded" })
+        expect((await accountSummaryQuery(connection, [account]))[0].balance).toBe(925000)
+        const filters = parseTransactionFilters(new URLSearchParams({ account: String(account), from: "2026-04-01", to: "2026-04-30" }))
+        expect(await readTransactionPage(connection, transactionConditions(filters), 1, 25)).toMatchObject({ total: 2, summary: { expense: 50000 } })
+        await client.query("DELETE FROM transactions WHERE id=$1", [late.id])
+        expect(scheduleOccurrences(await readSchedule(), "2026-01-01", "2026-04-30").map((item) => item.date)).toEqual(["2026-01-31"])
+        await client.query("DELETE FROM recurring_transactions WHERE id=$1", [id])
+        expect((await client.query("SELECT amount,recurring_id FROM transactions WHERE id=$1", [early.id])).rows[0]).toEqual({ amount: 25000, recurring_id: null })
+      } finally {
+        await client.query("ROLLBACK TO SAVEPOINT occurrence_fixture")
+      }
+    })
+  })
+
+  it("rejects links to another user's schedule", async () => {
+    const id = (await asUser(userA, () => client.query("INSERT INTO recurring_transactions(name,type,amount,category,account_id,start_date) VALUES ('Private schedule','expense',100,'Makanan',$1,'2026-10-01') RETURNING id", [accountA.id]))).rows[0].id
+    try {
+      await expect(asUser(userB, () => recordRecurringOccurrence(drizzle(client), id, { scheduledDate: "2026-10-01", date: "2026-10-02" }))).rejects.toMatchObject({ code: "recordMissing" })
+      await expect(asUser(userB, () => client.query("INSERT INTO transactions(type,amount,category,account_id,date,recurring_id,scheduled_date) VALUES ('expense',100,'Makanan',$1,'2026-10-02',$2,'2026-10-01')", [accountB.id, id]))).rejects.toMatchObject({ code: "42501" })
+    } finally {
+      await asUser(userA, () => client.query("DELETE FROM recurring_transactions WHERE id=$1", [id]))
+    }
+  })
+
+  it("allows only one concurrent recording for a scheduled occurrence", async () => {
+    const id = (await asUser(userA, () => client.query("INSERT INTO recurring_transactions(name,type,amount,category,account_id,start_date) VALUES ('Concurrent schedule','expense',100,'Makanan',$1,'2026-10-01') RETURNING id", [accountA.id]))).rows[0].id
+    const clients = [new pg.Client({ connectionString: testUrl }), new pg.Client({ connectionString: testUrl })]
+    try {
+      await Promise.all(clients.map((connection) => connection.connect()))
+      const results = await Promise.allSettled(clients.map(async (connection) => {
+        await connection.query("BEGIN ISOLATION LEVEL SERIALIZABLE")
+        try {
+          await connection.query("SET LOCAL ROLE finance_user")
+          await connection.query("SELECT set_config('app.user_id', $1, true)", [userA])
+          const transaction = await recordRecurringOccurrence(drizzle(connection), id, { scheduledDate: "2026-10-01", date: "2026-10-02" })
+          await connection.query("COMMIT")
+          return transaction
+        } catch (error) {
+          await connection.query("ROLLBACK")
+          throw error
+        }
+      }))
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1)
+      expect(Number((await client.query("SELECT count(*) FROM transactions WHERE recurring_id=$1", [id])).rows[0].count)).toBe(1)
+    } finally {
+      await Promise.all(clients.map((connection) => connection.end()))
+      await asUser(userA, async () => {
+        await client.query("DELETE FROM transactions WHERE recurring_id=$1", [id])
+        await client.query("DELETE FROM recurring_transactions WHERE id=$1", [id])
+      })
+    }
   })
 
   it("adds optional subcategories without rewriting existing transactions or schedules", async () => {

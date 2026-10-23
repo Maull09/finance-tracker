@@ -1,0 +1,8 @@
+ALTER TABLE "recurring_transactions" ADD COLUMN "recorded_through_date" date;--> statement-breakpoint
+UPDATE "recurring_transactions" SET "recorded_through_date" = "last_executed_date";--> statement-breakpoint
+ALTER TABLE "transactions" ADD COLUMN "recurring_id" integer;--> statement-breakpoint
+ALTER TABLE "transactions" ADD COLUMN "scheduled_date" date;--> statement-breakpoint
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_recurring_id_recurring_transactions_id_fk" FOREIGN KEY ("recurring_id") REFERENCES "public"."recurring_transactions"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "transactions_recurring_occurrence_idx" ON "transactions" USING btree ("recurring_id","scheduled_date");--> statement-breakpoint
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_recurring_date_required" CHECK ("transactions"."recurring_id" is null or "transactions"."scheduled_date" is not null);--> statement-breakpoint
+ALTER POLICY "owner_access" ON "transactions" TO finance_user USING (transactions.user_id = nullif(current_setting('app.user_id', true), '')::uuid) WITH CHECK (transactions.user_id = nullif(current_setting('app.user_id', true), '')::uuid and (transactions.account_id is null or exists (select 1 from public.accounts where accounts.id = transactions.account_id)) and (transactions.destination_account_id is null or exists (select 1 from public.accounts where accounts.id = transactions.destination_account_id)) and (transactions.recurring_id is null or exists (select 1 from public.recurring_transactions where recurring_transactions.id = transactions.recurring_id)));

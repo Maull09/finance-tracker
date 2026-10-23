@@ -4,6 +4,7 @@ import {
   monthlyFundSaving,
   projectNetWorth,
   scheduleOccurrences,
+  nextPendingOccurrence,
   simulateCashflow,
   type Schedule,
 } from "@/lib/planning"
@@ -53,7 +54,7 @@ describe("recurring calendar and projections", () => {
   it("excludes already-recorded occurrences and respects an end date", () => {
     expect(
       scheduleOccurrences(
-        { ...salary, lastExecutedDate: "2026-02-28", endDate: "2026-03-31" },
+        { ...salary, recordedThroughDate: "2026-02-28", endDate: "2026-03-31" },
         "2026-01-01",
         "2026-12-31",
       ).map((item) => item.date),
@@ -61,6 +62,21 @@ describe("recurring calendar and projections", () => {
   })
   it("returns no occurrences before a schedule starts", () => {
     expect(scheduleOccurrences(salary, "2025-01-01", "2025-12-31")).toEqual([])
+  })
+  it("excludes only the recorded period even when later periods are paid early", () => {
+    const schedule = { ...salary, lastExecutedDate: "2026-01-20", recordedDates: ["2026-03-31"] }
+    expect(scheduleOccurrences(schedule, "2026-01-01", "2026-04-30").map((item) => item.date))
+      .toEqual(["2026-01-31", "2026-02-28", "2026-04-30"])
+    expect(nextPendingOccurrence(schedule, "2026-02-20")?.date).toBe("2026-01-31")
+  })
+  it("combines migrated completion boundaries with individually recorded dates", () => {
+    expect(scheduleOccurrences({ ...salary, recordedThroughDate: "2026-02-28", recordedDates: ["2026-04-30"] }, "2026-01-01", "2026-04-30")
+      .map((item) => item.date)).toEqual(["2026-03-31"])
+  })
+  it("offers future first occurrences and overdue occurrences of ended schedules", () => {
+    expect(nextPendingOccurrence(salary, "2025-12-15")?.date).toBe("2026-01-31")
+    expect(nextPendingOccurrence({ ...salary, endDate: "2026-01-31" }, "2026-03-01")?.date).toBe("2026-01-31")
+    expect(nextPendingOccurrence({ ...salary, endDate: "2026-01-31", recordedDates: ["2026-01-31"] }, "2026-03-01")).toBeNull()
   })
   it("seeks directly into a distant calendar month without losing dates", () => {
     expect(

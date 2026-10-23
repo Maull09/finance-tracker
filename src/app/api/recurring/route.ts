@@ -6,13 +6,12 @@ import { accountsExist } from "@/lib/accounts"
 import { authenticatedResponse } from "@/lib/server/authenticated-response"
 import { FinanceError } from "@/lib/finance-errors"
 import { parseRecurring } from "@/lib/planning-validation"
+import { recurringSchedulesQuery } from "@/lib/server/recurring-queries"
 
 export async function GET(request: Request) {
   return authenticatedResponse(async (db) => {
     return NextResponse.json(
-      await db
-        .select()
-        .from(recurringTransactions)
+      await recurringSchedulesQuery(db)
         .orderBy(asc(recurringTransactions.startDate)),
     )
   }, request)

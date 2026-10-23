@@ -10,6 +10,8 @@ export type Schedule = {
   startDate: string
   endDate?: string | null
   lastExecutedDate?: string | null
+  recordedThroughDate?: string | null
+  recordedDates?: string[]
   accountId: number
 }
 export type Occurrence = {
@@ -65,7 +67,8 @@ export function scheduleOccurrences(
     if (
       date >= from &&
       (!schedule.endDate || date <= schedule.endDate) &&
-      (!schedule.lastExecutedDate || date > schedule.lastExecutedDate)
+      (!schedule.recordedThroughDate || date > schedule.recordedThroughDate) &&
+      !schedule.recordedDates?.includes(date)
     )
       result.push({
         scheduleId: schedule.id,
@@ -80,6 +83,11 @@ export function scheduleOccurrences(
     occurrence = dateAt(step)
   }
   return result
+}
+
+export function nextPendingOccurrence(schedule: Schedule, today: string) {
+  const latestDate = [today, schedule.startDate, schedule.recordedThroughDate ?? "", ...(schedule.recordedDates ?? [])].sort().at(-1)!
+  return scheduleOccurrences(schedule, schedule.startDate, getNextMonthStart(latestDate.slice(0, 7)))[0] ?? null
 }
 
 export function simulateCashflow(

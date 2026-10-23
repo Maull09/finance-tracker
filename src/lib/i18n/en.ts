@@ -292,6 +292,12 @@ export const en = {
   noSchedules: "No recurring schedules yet.",
   starts: "starts",
   recordNow: "Record now",
+  scheduledDate: "Scheduled date",
+  scheduledDateHint: "Choose the planned occurrence you are recording. It must match the schedule's weekly or monthly dates.",
+  actualTransactionDate: "Actual transaction date",
+  actualTransactionDateHint: "Choose when the money actually moved, today or a past date.",
+  recordOccurrenceHint: "Record this occurrence early or late. Account balances and reports use the actual transaction date; only the selected occurrence is completed.",
+  noPendingOccurrences: "No pending occurrences",
   deleteScheduleConfirm: "Delete this recurring schedule?",
   scheduleSaveFailed: "Saving the schedule failed. Check the fields and try again.",
   forecastFailed: "Calculating the projection failed. Try again.",
@@ -313,8 +319,8 @@ export const en = {
 
   cashAfterEdit: "Available cash after saving in {account}",
   scheduleUnavailable:
-    "This schedule has not started or has already ended. Review its start/end dates before recording a payment.",
-  scheduleAlreadyRecorded: "Today's payment is already recorded. Review it in transaction history.",
+    "The selected date is not an occurrence of this schedule. Choose a weekly or monthly date within its start/end dates.",
+  scheduleAlreadyRecorded: "This scheduled occurrence is already recorded. Review it in transaction history.",
   helpManage: "Update your records",
   helpManageBody:
     "Use Edit or Delete beside a record. Open Manage trades to correct stock trades. Contribution and payment histories preserve recorded amounts. Review the confirmation before permanently deleting a record.",

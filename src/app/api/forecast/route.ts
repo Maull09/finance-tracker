@@ -7,6 +7,7 @@ import { authenticatedResponse } from "@/lib/server/authenticated-response"
 import { getToday, isDate } from "@/lib/finance"
 import { readBalanceLedger } from "@/lib/server/financial-queries"
 import { scheduleOccurrences } from "@/lib/planning"
+import { recurringSchedulesQuery } from "@/lib/server/recurring-queries"
 
 export async function GET(request: NextRequest) {
   return authenticatedResponse(async (db) => {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     const [ledger, recurring] = await Promise.all([
       readBalanceLedger(db),
-      db.select().from(recurringTransactions).where(and(
+      recurringSchedulesQuery(db).where(and(
         lte(recurringTransactions.startDate, payday),
         or(isNull(recurringTransactions.endDate), gte(recurringTransactions.endDate, today)),
       )),
