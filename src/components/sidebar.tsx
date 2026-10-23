@@ -149,7 +149,7 @@ export function Sidebar({
                               ? "cursor-not-allowed text-muted-foreground opacity-50"
                               : activeTab === key
                               ? "bg-brand-soft font-semibold text-brand-active"
-                              : "text-slate-600 hover:bg-muted hover:text-foreground")
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground")
                           }
                         >
                           <Icon
@@ -218,7 +218,7 @@ export function Sidebar({
             {t(signingOut ? "authWorking" : "signOut")}
           </Button>
           {signOutError && (
-            <p role="alert" className="mb-3 text-sm text-red-800">
+            <p role="alert" className="mb-3 text-sm text-negative">
               {t("authFailed")}
             </p>
           )}
@@ -249,7 +249,7 @@ export function Sidebar({
   }
   return (
     <>
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-r bg-white md:block">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-r bg-card md:block">
         {content(false)}
       </aside>
       <Dialog

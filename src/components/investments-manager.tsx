@@ -161,7 +161,7 @@ export function InvestmentsManager() {
                     priceResult.failures.map((item) => item.symbol).join(", ")}
               </p>
             )}
-            <dl className="grid gap-5 rounded-xl border bg-white p-5 sm:grid-cols-2 xl:grid-cols-4">
+            <dl className="grid gap-5 rounded-xl border bg-card p-5 sm:grid-cols-2 xl:grid-cols-4">
               {[
                 ["costBasis", data.totals.costBasis],
                 ["marketValue", data.totals.marketValue],
@@ -175,7 +175,7 @@ export function InvestmentsManager() {
                   <dd
                     className={
                       "mt-2 text-xl font-semibold tabular-nums " +
-                      (Number(amount) < 0 ? "text-rose-700" : "")
+                      (Number(amount) < 0 ? "text-negative" : "")
                     }
                   >
                     {showMoney(amount as number | null)}
@@ -184,7 +184,7 @@ export function InvestmentsManager() {
               ))}
             </dl>
             {data.totals.unpricedCount > 0 && (
-              <p className="text-sm text-amber-900">
+              <p className="text-sm text-warning">
                 {t("unpricedHint", { count: data.totals.unpricedCount })}
               </p>
             )}
@@ -217,7 +217,7 @@ export function InvestmentsManager() {
                   <>
                     <section
                       aria-label={t("investmentCash")}
-                      className="flex flex-wrap gap-4 rounded-lg border bg-white p-4"
+                      className="flex flex-wrap gap-4 rounded-lg border bg-card p-4"
                     >
                       {data.accounts.map((account) => (
                         <div key={account.id} className="min-w-40">
@@ -258,7 +258,7 @@ export function InvestmentsManager() {
                         role="region"
                         aria-label={t("portfolio")}
                         tabIndex={0}
-                        className="overflow-x-auto rounded-xl border bg-white"
+                        className="overflow-x-auto rounded-xl border bg-card"
                       >
                         <table className="w-full min-w-[850px] text-sm">
                           <caption className="sr-only">
@@ -337,7 +337,7 @@ export function InvestmentsManager() {
                                     className={
                                       "p-4 text-right tabular-nums " +
                                       ((holding.unrealizedGain ?? 0) < 0
-                                        ? "text-rose-700"
+                                        ? "text-negative"
                                         : "text-brand-active")
                                     }
                                   >
@@ -367,7 +367,7 @@ export function InvestmentsManager() {
                     <WatchlistForm />
                   </EmptyState>
                 ) : (
-                  <ul className="divide-y overflow-hidden rounded-xl border bg-white">
+                  <ul className="divide-y overflow-hidden rounded-xl border bg-card">
                     {data.watchlist.map((item) => (
                       <li
                         key={item.symbol}
@@ -437,7 +437,7 @@ export function InvestmentsManager() {
                     role="region"
                     aria-label={t("tradeHistory")}
                     tabIndex={0}
-                    className="overflow-x-auto rounded-xl border bg-white"
+                    className="overflow-x-auto rounded-xl border bg-card"
                   >
                     <table className="w-full min-w-[700px] text-sm">
                       <caption className="sr-only">{t("tradeHistory")}</caption>
@@ -512,7 +512,7 @@ export function InvestmentsManager() {
                               className={
                                 "p-3 text-right tabular-nums " +
                                 (trade.side === "buy"
-                                  ? "text-rose-700"
+                                  ? "text-negative"
                                   : "text-brand-active")
                               }
                             >
@@ -846,7 +846,7 @@ function StockTradeForm({
                 {t("tradeTotal")}: {formatCurrency(cashChange)}
               </p>
               {trade && projectedAvailable !== null && (
-                <p className={projectedAvailable < 0 ? "text-rose-700" : ""}>
+                <p className={projectedAvailable < 0 ? "text-negative" : ""}>
                   {t("cashAfterEdit", { account: selectedAccount!.name })}:{" "}
                   {formatCurrency(projectedAvailable)}
                 </p>

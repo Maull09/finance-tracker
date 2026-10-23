@@ -335,7 +335,7 @@ function GoalCard({ goal, accounts }: { goal: Goal; accounts: Account[] }) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <CardTitle className="break-words">
-              <Target className="mr-2 inline h-4 w-4 text-primary" />
+              <Target className="mr-2 inline h-4 w-4 text-brand-active" />
               {goal.title}
             </CardTitle>
             {goal.description && (
@@ -348,9 +348,9 @@ function GoalCard({ goal, accounts }: { goal: Goal; accounts: Account[] }) {
             className={
               "shrink-0 rounded-md px-2 py-1 text-xs font-medium " +
               (status === "overdue"
-                ? "bg-rose-50 text-rose-800"
+                ? "bg-negative-soft text-negative"
                 : status === "urgent"
-                  ? "bg-amber-50 text-amber-800"
+                  ? "bg-warning-soft text-warning"
                   : "bg-brand-soft text-brand-active")
             }
           >
@@ -500,7 +500,7 @@ function GoalCard({ goal, accounts }: { goal: Goal; accounts: Account[] }) {
           </Dialog>
         )}
         {remaining > 0 && accounts.length === 0 && (
-          <p className="text-xs text-amber-800">{t("addAnAccountFirst")}</p>
+          <p className="text-xs text-warning">{t("addAnAccountFirst")}</p>
         )}
         <div className="flex flex-wrap gap-1 border-t pt-3">
           <AddGoal goal={goal} />

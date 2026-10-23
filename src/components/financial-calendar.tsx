@@ -21,11 +21,11 @@ import type { CalendarData } from "@/lib/planning-types"
 
 const eventColors: Record<string, string> = {
   income: "bg-brand-soft text-brand-active",
-  expense: "bg-rose-50 text-rose-900",
-  transfer: "bg-sky-50 text-sky-900",
-  debtDue: "bg-amber-50 text-amber-900",
+  expense: "bg-negative-soft text-negative",
+  transfer: "bg-brand-soft text-brand-active",
+  debtDue: "bg-warning-soft text-warning",
   receivableDue: "bg-brand-soft text-brand-active",
-  fundDue: "bg-slate-100 text-slate-900",
+  fundDue: "bg-muted text-foreground",
 }
 
 export function FinancialCalendar() {
@@ -139,7 +139,7 @@ export function FinancialCalendar() {
         <LoadingState />
       ) : (
         <>
-          <div className="hidden overflow-hidden rounded-xl border bg-white md:block">
+          <div className="hidden overflow-hidden rounded-xl border bg-card md:block">
             <table className="w-full table-fixed text-sm">
               <caption className="sr-only">{formatMonth(month)}</caption>
               <thead>
@@ -246,7 +246,7 @@ export function FinancialCalendar() {
                 description={t("calendarHint")}
               />
             ) : (
-              <ul className="divide-y overflow-hidden rounded-xl border bg-white">
+              <ul className="divide-y overflow-hidden rounded-xl border bg-card">
                 {agenda.map((event) => (
                   <li
                     key={event.id}

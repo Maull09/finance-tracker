@@ -33,10 +33,10 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
         className="fixed bottom-4 right-4 left-4 z-50 sm:left-auto sm:max-w-md"
       >
         {message && (
-          <div className="flex items-start gap-3 rounded-xl border border-brand-border bg-white p-4 text-sm text-foreground shadow-lg">
+          <div className="flex items-start gap-3 rounded-xl border border-brand-border bg-card p-4 text-sm text-foreground shadow-lg">
             <CheckCircle2
               aria-hidden="true"
-              className="mt-0.5 h-5 w-5 shrink-0 text-brand"
+              className="mt-0.5 h-5 w-5 shrink-0 text-brand-active"
             />
             <p className="flex-1">{t(message)}</p>
             <button
@@ -148,7 +148,7 @@ export function ErrorNotice({
   return (
     <div
       role="alert"
-      className="flex flex-col gap-3 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900 sm:flex-row sm:items-start"
+      className="flex flex-col gap-3 rounded-lg border border-negative-border bg-negative-soft p-4 text-sm text-negative sm:flex-row sm:items-start"
     >
       <AlertCircle aria-hidden="true" className="h-5 w-5 shrink-0" />
       <p className="flex-1 leading-relaxed">{t(message)}</p>

@@ -80,7 +80,7 @@ export function AccountSummary() {
               <p
                 className={
                   "mt-4 text-xl font-semibold tabular-nums " +
-                  (account.balance < 0 ? "text-rose-700" : "")
+                  (account.balance < 0 ? "text-negative" : "")
                 }
               >
                 {formatCurrency(account.balance)}
@@ -141,7 +141,7 @@ function ReconcileAccount({ account }: { account: Summary }) {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-primary">
+        <Button variant="ghost" size="sm" className="text-brand-active">
           {t("reconcileBalance")}
         </Button>
       </DialogTrigger>

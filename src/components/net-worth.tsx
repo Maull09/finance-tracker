@@ -37,7 +37,7 @@ export function NetWorth() {
         data && (
           <>
             <section
-              className="rounded-xl border bg-white p-5 sm:p-7"
+              className="rounded-xl border bg-card p-5 sm:p-7"
               aria-label={t("netWorth")}
             >
               <p className="text-sm text-muted-foreground">
@@ -46,13 +46,13 @@ export function NetWorth() {
               <p
                 className={
                   "mt-3 break-words text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl " +
-                  (data.knownNetWorth < 0 ? "text-rose-700" : "text-foreground")
+                  (data.knownNetWorth < 0 ? "text-negative" : "text-foreground")
                 }
               >
                 {formatCurrency(data.knownNetWorth)}
               </p>
               {data.netWorth === null && (
-                <p role="status" className="mt-3 text-sm text-amber-900">
+                <p role="status" className="mt-3 text-sm text-warning">
                   {t("incompleteNetWorth")}
                 </p>
               )}
@@ -61,7 +61,7 @@ export function NetWorth() {
               </p>
             </section>
             <div className="grid gap-6 lg:grid-cols-2">
-              <section className="rounded-xl border bg-white p-5">
+              <section className="rounded-xl border bg-card p-5">
                 <h2 className="font-semibold">{t("assetsAndLiabilities")}</h2>
                 <dl className="mt-4 divide-y">
                   {[
@@ -78,7 +78,7 @@ export function NetWorth() {
                       <dd
                         className={
                           "font-semibold tabular-nums " +
-                          (Number(value) < 0 ? "text-rose-700" : "")
+                          (Number(value) < 0 ? "text-negative" : "")
                         }
                       >
                         {formatCurrency(Number(value))}
@@ -98,7 +98,7 @@ export function NetWorth() {
                     <span
                       className={
                         "font-semibold tabular-nums " +
-                        (data.availableCash < 0 ? "text-rose-700" : "")
+                        (data.availableCash < 0 ? "text-negative" : "")
                       }
                     >
                       {formatCurrency(data.availableCash)}
@@ -109,7 +109,7 @@ export function NetWorth() {
                   <a href="#investments">{t("portfolio")}</a>
                 </Button>
               </section>
-              <section className="rounded-xl border bg-white p-5">
+              <section className="rounded-xl border bg-card p-5">
                 <h2 className="font-semibold">{t("accountBreakdown")}</h2>
                 <ul className="mt-4 divide-y">
                   {data.accounts.map((account) => (
@@ -142,7 +142,7 @@ export function NetWorth() {
                   description={t("netWorthDescription")}
                 />
               ) : (
-                <ul className="divide-y rounded-xl border bg-white">
+                <ul className="divide-y rounded-xl border bg-card">
                   {data.debts
                     .filter((debt) => debt.remaining > 0)
                     .map((debt) => (

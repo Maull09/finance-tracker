@@ -35,6 +35,7 @@ import { SinkingFunds } from "@/components/sinking-funds"
 import { ReportDistribution } from "@/components/report-distribution"
 import { Sidebar, navigationItems } from "@/components/sidebar"
 import { QuickGuide } from "@/components/quick-guide"
+import { ThemeSelector } from "@/components/theme-selector"
 import { useLanguage } from "@/components/language-provider"
 import { TransactionList } from "@/components/transaction-list"
 import { TransactionForm } from "@/components/transaction-form"
@@ -56,17 +57,18 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { chartTooltipStyle, chartTooltipItemStyle } from "@/lib/chart-theme"
 import { getCurrentMonth } from "@/lib/finance"
 import { useRemoteData } from "@/lib/use-remote-data"
 import type { Account, DashboardData } from "@/lib/types"
 
 const chartColors = [
-  "#0052ff",
-  "#4771ff",
-  "#d97706",
-  "#be123c",
-  "#7c3aed",
-  "#475569",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-4)",
+  "var(--negative)",
+  "var(--chart-5)",
+  "var(--chart-6)",
 ]
 
 export default function FinanceTracker() {
@@ -95,7 +97,7 @@ export default function FinanceTracker() {
           event.preventDefault()
           document.getElementById("main-content")?.focus()
         }}
-        className="sr-only z-[60] rounded bg-white p-3 focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        className="sr-only z-[60] rounded bg-card p-3 focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
       >
         {t("skipToContent")}
       </a>
@@ -105,7 +107,7 @@ export default function FinanceTracker() {
         onClose={() => setSidebarOpen(false)}
       />
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-2 border-b bg-white/95 px-4 backdrop-blur-sm sm:px-7">
+        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-2 border-b bg-card/95 px-4 backdrop-blur-sm sm:px-7">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
@@ -128,6 +130,7 @@ export default function FinanceTracker() {
               }).format(new Date())}
             </span>
             <QuickGuide />
+            <ThemeSelector />
           </div>
         </header>
         <main
@@ -200,7 +203,7 @@ function Dashboard() {
           <>
             <section
               aria-label={t("overview")}
-              className="overflow-hidden rounded-xl border bg-white"
+              className="overflow-hidden rounded-xl border bg-card"
             >
               <div className="grid divide-y sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4">
                 <div className="bg-brand-soft p-5 sm:p-6">
@@ -211,7 +214,7 @@ function Dashboard() {
                     className={
                       "mt-3 break-words text-3xl font-semibold tracking-tight tabular-nums " +
                       (data.runningBalance < 0
-                        ? "text-rose-700"
+                        ? "text-negative"
                         : "text-foreground")
                     }
                   >
@@ -225,13 +228,13 @@ function Dashboard() {
                   label={t("monthlyIncome")}
                   amount={formatCurrency(data.income)}
                   icon={<ArrowDownLeft className="h-4 w-4" />}
-                  tone="text-emerald-700"
+                  tone="text-positive"
                 />
                 <Metric
                   label={t("monthlyExpense")}
                   amount={formatCurrency(data.expense)}
                   icon={<ArrowUpRight className="h-4 w-4" />}
-                  tone="text-rose-700"
+                  tone="text-negative"
                 />
                 <Metric
                   label={t("monthlySavingRate")}
@@ -249,7 +252,7 @@ function Dashboard() {
                       : "savingsRateUnavailable",
                   )}
                   tone={
-                    data.savingRate < 0 ? "text-rose-700" : "text-foreground"
+                    data.savingRate < 0 ? "text-negative" : "text-foreground"
                   }
                 />
               </div>
@@ -285,7 +288,7 @@ function Dashboard() {
                       <dt className="text-sm text-muted-foreground">
                         {t("todayIncome")}
                       </dt>
-                      <dd className="mt-2 break-words text-lg font-semibold tabular-nums text-emerald-700">
+                      <dd className="mt-2 break-words text-lg font-semibold tabular-nums text-positive">
                         {formatCurrency(data.today.income)}
                       </dd>
                     </div>
@@ -293,7 +296,7 @@ function Dashboard() {
                       <dt className="text-sm text-muted-foreground">
                         {t("todayExpense")}
                       </dt>
-                      <dd className="mt-2 break-words text-lg font-semibold tabular-nums text-rose-700">
+                      <dd className="mt-2 break-words text-lg font-semibold tabular-nums text-negative">
                         {formatCurrency(data.today.expense)}
                       </dd>
                     </div>
@@ -305,8 +308,8 @@ function Dashboard() {
                         className={
                           "mt-2 break-words text-lg font-semibold tabular-nums " +
                           (data.today.net < 0
-                            ? "text-rose-700"
-                            : "text-emerald-700")
+                            ? "text-negative"
+                            : "text-positive")
                         }
                       >
                         {formatCurrency(data.today.net)}
@@ -323,11 +326,11 @@ function Dashboard() {
                   </CardDescription>
                   <div className="mt-3 flex gap-4 text-xs">
                     <span className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                      <span className="h-2 w-2 rounded-full bg-positive" />
                       {t("income")}
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-rose-600" />
+                      <span className="h-2 w-2 rounded-full bg-negative" />
                       {t("expenses")}
                     </span>
                   </div>
@@ -335,14 +338,16 @@ function Dashboard() {
                 <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
                     <BarChart data={data.dailyData} accessibilityLayer>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
                       <XAxis
+                        tick={{ fill: "var(--muted-foreground)" }}
                         dataKey="label"
                         tickLine={false}
                         axisLine={false}
                         fontSize={11}
                       />
                       <YAxis
+                        tick={{ fill: "var(--muted-foreground)" }}
                         width={48}
                         fontSize={11}
                         tickLine={false}
@@ -352,19 +357,22 @@ function Dashboard() {
                         }
                       />
                       <Tooltip
+                        contentStyle={chartTooltipStyle}
+                        itemStyle={chartTooltipItemStyle}
+                        cursor={{ fill: "var(--muted)", stroke: "var(--border)" }}
                         formatter={(value: number) => formatCurrency(value)}
                       />
                       <Bar
                         isAnimationActive={false}
                         dataKey="income"
-                        fill="#059669"
+                        fill="var(--positive)"
                         name={t("income")}
                         radius={[3, 3, 0, 0]}
                       />
                       <Bar
                         isAnimationActive={false}
                         dataKey="expense"
-                        fill="#e11d48"
+                        fill="var(--negative)"
                         name={t("expenses")}
                         radius={[3, 3, 0, 0]}
                       />
@@ -430,9 +438,9 @@ function Dashboard() {
                   }
                   tone={
                     data.spendingChange && data.spendingChange.amount > 0
-                      ? "text-rose-700"
+                      ? "text-negative"
                       : data.spendingChange && data.spendingChange.amount < 0
-                        ? "text-emerald-700"
+                        ? "text-positive"
                         : undefined
                   }
                 />
@@ -446,11 +454,11 @@ function Dashboard() {
                   <CardDescription>{t("cashFlowDescription")}</CardDescription>
                   <div className="mt-3 flex gap-4 text-xs">
                     <span className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                      <span className="h-2 w-2 rounded-full bg-positive" />
                       {t("income")}
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-rose-600" />
+                      <span className="h-2 w-2 rounded-full bg-negative" />
                       {t("expenses")}
                     </span>
                   </div>
@@ -458,14 +466,16 @@ function Dashboard() {
                 <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
                     <BarChart data={data.monthlyData} accessibilityLayer>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
                       <XAxis
+                        tick={{ fill: "var(--muted-foreground)" }}
                         dataKey="month"
                         tickLine={false}
                         axisLine={false}
                         fontSize={11}
                       />
                       <YAxis
+                        tick={{ fill: "var(--muted-foreground)" }}
                         width={48}
                         fontSize={11}
                         tickLine={false}
@@ -475,19 +485,22 @@ function Dashboard() {
                         }
                       />
                       <Tooltip
+                        contentStyle={chartTooltipStyle}
+                        itemStyle={chartTooltipItemStyle}
+                        cursor={{ fill: "var(--muted)", stroke: "var(--border)" }}
                         formatter={(value: number) => formatCurrency(value)}
                       />
                       <Bar
                         isAnimationActive={false}
                         dataKey="income"
-                        fill="#059669"
+                        fill="var(--positive)"
                         name={t("income")}
                         radius={[3, 3, 0, 0]}
                       />
                       <Bar
                         isAnimationActive={false}
                         dataKey="expense"
-                        fill="#e11d48"
+                        fill="var(--negative)"
                         name={t("expenses")}
                         radius={[3, 3, 0, 0]}
                       />
@@ -505,14 +518,16 @@ function Dashboard() {
                 <CardContent>
                   <ResponsiveContainer width="100%" height={282}>
                     <AreaChart data={data.balanceHistory} accessibilityLayer>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
                       <XAxis
+                        tick={{ fill: "var(--muted-foreground)" }}
                         dataKey="month"
                         tickLine={false}
                         axisLine={false}
                         fontSize={11}
                       />
                       <YAxis
+                        tick={{ fill: "var(--muted-foreground)" }}
                         width={48}
                         fontSize={11}
                         tickLine={false}
@@ -522,14 +537,17 @@ function Dashboard() {
                         }
                       />
                       <Tooltip
+                        contentStyle={chartTooltipStyle}
+                        itemStyle={chartTooltipItemStyle}
+                        cursor={{ fill: "var(--muted)", stroke: "var(--border)" }}
                         formatter={(value: number) => formatCurrency(value)}
                       />
                       <Area
                         isAnimationActive={false}
                         type="monotone"
                         dataKey="balance"
-                        stroke="#0052ff"
-                        fill="#0052ff"
+                        stroke="var(--chart-1)"
+                        fill="var(--chart-1)"
                         fillOpacity={0.1}
                         name={t("balance")}
                       />
@@ -689,7 +707,7 @@ function Reports() {
                   {data.insights.map((insight) => (
                     <p
                       key={insight}
-                      className="rounded-lg border-l-4 border-amber-500 bg-amber-50 p-3 text-sm text-amber-950"
+                      className="rounded-lg border-l-4 border-warning bg-warning-soft p-3 text-sm text-warning"
                     >
                       {insight}
                     </p>

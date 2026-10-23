@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Landmark } from "lucide-react"
 import { useLanguage } from "./language-provider"
 import { Button } from "./ui/button"
+import { ThemeSelector } from "./theme-selector"
 
 export function PublicHeader() {
   const { locale, setLocale, t } = useLanguage()
@@ -18,7 +19,8 @@ export function PublicHeader() {
         </span>
         <span>Finance Tracker</span>
       </Link>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <ThemeSelector />
         <label className="sr-only" htmlFor="public-language">
           {t("language")}
         </label>
