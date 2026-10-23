@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Search, SlidersHorizontal, Trash2 } from "lucide-react"
 import { TransactionForm } from "./transaction-form"
 import { TransactionGroups } from "./transaction-groups"
+import { CategoryFields } from "./category-fields"
 import { AiTransactionDrafts, ReceiptReader } from "./ai-transaction-drafts"
 import { useLanguage } from "./language-provider"
 import {
@@ -57,6 +58,8 @@ export function TransactionList() {
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [type, setType] = useState<"all" | TransactionType>("all")
+  const [category, setCategory] = useState("")
+  const [subcategory, setSubcategory] = useState<string | null>(null)
   const [account, setAccount] = useState("all")
   const [group, setGroup] = useState("all")
   const [from, setFrom] = useState("")
@@ -78,6 +81,8 @@ export function TransactionList() {
     limit: "25",
     search: debouncedSearch,
     type,
+    category,
+    subcategory: subcategory ?? "",
     account,
     group: group.startsWith("group:") ? group.slice(6) : "",
     ungrouped: String(group === "ungrouped"),
@@ -100,12 +105,14 @@ export function TransactionList() {
     [accounts],
   )
   const hasFilters = Boolean(
-    search || type !== "all" || account !== "all" || group !== "all" || from || to,
+    search || type !== "all" || category || subcategory || account !== "all" || group !== "all" || from || to,
   )
   function resetFilters() {
     setSearch("")
     setDebouncedSearch("")
     setType("all")
+    setCategory("")
+    setSubcategory(null)
     setAccount("all")
     setGroup("all")
     setFrom("")
@@ -203,6 +210,8 @@ export function TransactionList() {
                 value={type}
                 onValueChange={(value) => {
                   setType(value as "all" | TransactionType)
+                  setCategory("")
+                  setSubcategory(null)
                   setPage(1)
                 }}
               >
@@ -218,6 +227,8 @@ export function TransactionList() {
                 </SelectContent>
               </Select>
             </Field>
+            <CategoryFields id="filter" type={type} category={category} subcategory={subcategory} filter
+              onChange={(category, subcategory) => { setCategory(category); setSubcategory(subcategory); setPage(1) }} />
             <Field id="filter-account" label={t("account")}>
               <Select
                 value={account}
@@ -447,6 +458,7 @@ export function TransactionList() {
                             <span className="font-medium">
                               {t(item.category)}
                             </span>
+                            {item.subcategory && <p className="mt-1 max-w-[220px] break-words text-xs text-muted-foreground">{t(item.subcategory)}</p>}
                             {item.groupName && (
                               <p className="mt-1 max-w-[220px] break-words text-xs font-medium text-brand-active">
                                 {item.groupName}

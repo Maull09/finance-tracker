@@ -1,5 +1,6 @@
 import { isDate, transactionTypes, type TransactionType } from "./finance"
 import { expenseCategories, incomeCategories } from "./finance"
+import { getSubcategories } from "./categories"
 import { messages } from "./i18n"
 import { parseTransactionGroupName } from "./validation"
 
@@ -11,10 +12,11 @@ export function findEnglishCategoryMatches(search: string) {
       ...incomeCategories,
       ...expenseCategories,
       "Transfer antar akun",
+      ...[...incomeCategories, ...expenseCategories].flatMap((category) => getSubcategories("all", category)),
     ]),
   ]
   return categories.filter((category) =>
-    messages.en[category].toLowerCase().includes(query),
+    messages.en[category]?.toLowerCase().includes(query),
   )
 }
 
@@ -25,6 +27,9 @@ export function parseTransactionFilters(params: URLSearchParams) {
   const to = params.get("to") ?? ""
   const groupName = parseTransactionGroupName(params.get("group"))
   const ungrouped = params.get("ungrouped") ?? "false"
+  const category = params.get("category")?.trim() || ""
+  const subcategory = params.get("subcategory")?.trim() || ""
+  if (category.length > 120 || subcategory.length > 120 || (subcategory && !category)) return null
   if (
     groupName === undefined ||
     !["true", "false"].includes(ungrouped) ||
@@ -46,6 +51,8 @@ export function parseTransactionFilters(params: URLSearchParams) {
     return null
   return {
     search: (params.get("search") ?? "").trim().slice(0, 200),
+    category,
+    subcategory,
     type: type as "all" | TransactionType,
     accountId: account === "all" ? null : Number(account),
     from,

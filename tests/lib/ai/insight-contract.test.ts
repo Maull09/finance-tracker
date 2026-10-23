@@ -3,6 +3,14 @@ import { canonicalInsightContext, insightRequestSchema } from "@/lib/ai/insight-
 import { insightJobId } from "@/lib/ai/insight-queue"
 
 describe("page insight context", () => {
+  it("keeps category filters in the insight context and cache identity", () => {
+    const context = { page: "transactions" as const, filters: "type=all&category=Minuman&subcategory=Kopi" }
+    expect(insightRequestSchema.safeParse({ context, locale: "id" }).success).toBe(true)
+    expect(canonicalInsightContext(context)).toEqual({ page: "transactions", filters: "category=Minuman&subcategory=Kopi" })
+    expect(insightJobId("alice", context, "id", "revision", 0)).not.toBe(
+      insightJobId("alice", { ...context, filters: "category=Minuman" }, "id", "revision", 0),
+    )
+  })
   it("canonicalises filters and separates users, locales, periods and financial revisions", () => {
     const first = { page: "transactions" as const, filters: "type=all&search=&from=2026-09-01&account=all" }
     const second = { page: "transactions" as const, filters: "from=2026-09-01" }

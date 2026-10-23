@@ -14,6 +14,8 @@ describe("transaction filter inputs", () => {
       ),
     ).toEqual({
       search: "rent",
+      category: "",
+      subcategory: "",
       type: "transfer",
       accountId: 2,
       from: "2026-10-01",
@@ -38,6 +40,8 @@ describe("transaction filter inputs", () => {
   it("searches all records when filters are cleared", () => {
     expect(parseTransactionFilters(new URLSearchParams())).toEqual({
       search: "",
+      category: "",
+      subcategory: "",
       type: "all",
       accountId: null,
       from: "",
@@ -62,5 +66,13 @@ describe("transaction filter inputs", () => {
     expect(findEnglishCategoryMatches("bill")).toEqual(["Tagihan"])
     expect(findEnglishCategoryMatches("")).toEqual([])
     expect(findEnglishCategoryMatches("custom note")).toEqual([])
+    expect(findEnglishCategoryMatches("coffee")).toEqual(["Kopi"])
+    expect(findEnglishCategoryMatches("drinks")).toEqual(["Minuman"])
+  })
+  it("keeps exact category and subcategory filters and rejects unscoped subcategories", () => {
+    expect(parseTransactionFilters(new URLSearchParams("category=Minuman&subcategory=Kopi")))
+      .toMatchObject({ category: "Minuman", subcategory: "Kopi" })
+    expect(parseTransactionFilters(new URLSearchParams("subcategory=Kopi"))).toBeNull()
+    expect(parseTransactionFilters(new URLSearchParams({ category: "x".repeat(121) }))).toBeNull()
   })
 })

@@ -177,6 +177,7 @@ export const transactions = pgTable(
     type: transactionTypeEnum("type").notNull(),
     amount: integer("amount").notNull(),
     category: text("category").notNull(),
+    subcategory: text("subcategory"),
     groupName: text("group_name"),
     description: text("description"),
     date: date("date").notNull(),
@@ -248,6 +249,7 @@ export const recurringTransactions = pgTable(
     type: transactionTypeEnum("type").notNull(),
     amount: integer("amount").notNull(),
     category: text("category").notNull(),
+    subcategory: text("subcategory"),
     description: text("description"),
     accountId: integer("account_id")
       .references(() => accounts.id)

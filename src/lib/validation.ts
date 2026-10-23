@@ -6,6 +6,7 @@ import {
   type AccountType,
   type TransactionType,
 } from "./finance"
+import { isValidSubcategory } from "./categories"
 
 type RecordBody = Record<string, unknown>
 
@@ -13,6 +14,7 @@ export type TransactionInput = {
   type: TransactionType
   amount: number
   category: string
+  subcategory: string | null
   groupName: string | null
   description: string
   date: string
@@ -40,6 +42,7 @@ export function parseTransactionInput(value: unknown): TransactionInput | null {
   const type = value.type
   const amount = toPositiveInteger(value.amount)
   const category = toRequiredText(value.category)
+  const subcategory = value.subcategory == null || value.subcategory === "" ? null : toRequiredText(value.subcategory)
   const groupName = parseTransactionGroupName(value.groupName)
   const date = value.date
   const accountId = toPositiveInteger(value.accountId)
@@ -49,6 +52,8 @@ export function parseTransactionInput(value: unknown): TransactionInput | null {
     !transactionTypes.includes(type as TransactionType) ||
     amount == null ||
     !category ||
+    subcategory === "" ||
+    !isValidSubcategory(type as TransactionType, category, subcategory) ||
     groupName === undefined ||
     !isDate(date) ||
     accountId == null
@@ -64,6 +69,7 @@ export function parseTransactionInput(value: unknown): TransactionInput | null {
     type: type as TransactionType,
     amount,
     category,
+    subcategory,
     groupName,
     description: toOptionalText(value.description),
     date: date as string,

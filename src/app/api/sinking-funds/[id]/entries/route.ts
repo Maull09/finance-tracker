@@ -10,6 +10,7 @@ import { authenticatedResponse } from "@/lib/server/authenticated-response"
 import { FinanceError } from "@/lib/finance-errors"
 import { integerInput, recordInput, textInput } from "@/lib/planning-validation"
 import { expenseCategories, getToday } from "@/lib/finance"
+import { isValidSubcategory } from "@/lib/categories"
 import { accountSummaryQuery, readReservedCash } from "@/lib/server/financial-queries"
 
 export async function POST(
@@ -25,11 +26,11 @@ export async function POST(
       throw new FinanceError("invalidInput")
     const note = textInput(body.note, 500, false)
     const category = textInput(body.category ?? "Lainnya")
+    const subcategory = body.subcategory == null || body.subcategory === "" ? null : textInput(body.subcategory)
     if (
       kind === "spend" &&
-      !expenseCategories.includes(
-        category as (typeof expenseCategories)[number],
-      )
+      (!isValidSubcategory("expense", category, subcategory) ||
+        !expenseCategories.includes(category))
     )
       throw new FinanceError("invalidInput")
     const entry = await db.transaction(async (connection) => {
@@ -75,6 +76,7 @@ export async function POST(
             accountId: fund.accountId,
             amount,
             category,
+            subcategory,
             date: getToday(),
             description: fund.name + (note ? ": " + note : ""),
           })

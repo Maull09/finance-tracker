@@ -61,7 +61,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         .values({
           type: debt.type === "utang" ? "expense" : "income",
           amount,
-          category:
+          category: debt.type === "utang" ? "Utang" : "Piutang",
+          subcategory:
             debt.type === "utang" ? "Pembayaran utang" : "Penerimaan piutang",
           description: note || debt.name,
           date,

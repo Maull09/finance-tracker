@@ -10,6 +10,8 @@ import { readBalanceLedger, readReservedCash, accountSummaryQuery, goalSummaryQu
 import { readBudgets } from "@/lib/server/budget-queries"
 import { readDashboardLedger } from "@/lib/server/dashboard-queries"
 import { readTransactionPage } from "@/lib/server/transaction-queries"
+import { parseTransactionFilters } from "@/lib/transaction-filters"
+import { transactionConditions } from "@/lib/server/transaction-conditions"
 import { readLatestPrices } from "@/lib/server/market-queries"
 import { tradeCashChange } from "@/lib/investments"
 import { assignLegacyOwner } from "../../scripts/db-assign-owner.mjs"
@@ -86,7 +88,56 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
   it("applies migrations without losing legacy amounts or watchlist notes", async () => {
     expect((await client.query("SELECT initial_balance, user_id FROM accounts WHERE id = $1", [legacyId])).rows[0]).toEqual({ initial_balance: 12345, user_id: null })
     expect((await client.query("SELECT note FROM stock_watchlist")).rows[0].note).toBe("Legacy note")
-    expect(schemaIssues(loadSnapshot("0013"), await readDatabaseSchema(client))).toEqual([])
+    expect(schemaIssues(loadSnapshot("0014"), await readDatabaseSchema(client))).toEqual([])
+  })
+
+  it("adds optional subcategories without rewriting existing transactions or schedules", async () => {
+    await client.query("BEGIN")
+    try {
+      await client.query("ALTER TABLE transactions DROP COLUMN subcategory; ALTER TABLE recurring_transactions DROP COLUMN subcategory")
+      const transaction = (await client.query("INSERT INTO transactions(user_id,type,amount,category,group_name,date,account_id) VALUES ($1,'expense',12345,'Makanan','Existing group','2026-10-23',$2) RETURNING id", [userA, accountA.id])).rows[0]
+      const schedule = (await client.query("INSERT INTO recurring_transactions(user_id,name,type,amount,category,account_id,start_date) VALUES ($1,'Existing schedule','expense',23456,'Tagihan',$2,'2026-10-23') RETURNING id", [userA, accountA.id])).rows[0]
+      for (const statement of readFileSync("drizzle/0014_brown_santa_claus.sql", "utf8").split("--> statement-breakpoint"))
+        await client.query(statement)
+      expect((await client.query("SELECT amount,category,subcategory,group_name FROM transactions WHERE id=$1", [transaction.id])).rows[0])
+        .toEqual({ amount: 12345, category: "Makanan", subcategory: null, group_name: "Existing group" })
+      expect((await client.query("SELECT amount,category,subcategory FROM recurring_transactions WHERE id=$1", [schedule.id])).rows[0])
+        .toEqual({ amount: 23456, category: "Tagihan", subcategory: null })
+    } finally {
+      await client.query("ROLLBACK")
+    }
+  })
+
+  it("filters subcategories across pages while budgets and dashboard keep parent totals private", async () => {
+    await asUser(userA, async () => {
+      await client.query("SAVEPOINT category_fixture")
+      try {
+        const connection = drizzle(client)
+        const accountId = (await client.query("INSERT INTO accounts(name,type) VALUES ('Category fixture','bank') RETURNING id")).rows[0].id
+        await client.query("INSERT INTO transactions(type,amount,category,subcategory,date,account_id) SELECT 'expense',100,'Minuman','Kopi','2026-10-23',$1 FROM generate_series(1,26)", [accountId])
+        await client.query("INSERT INTO transactions(type,amount,category,subcategory,date,account_id) VALUES ('expense',200,'Minuman','Teh','2026-10-23',$1),('expense',300,'Minuman',null,'2026-10-23',$1)", [accountId])
+        await client.query("INSERT INTO budgets(category,budget,period_start) VALUES ('Minuman',5000,'2026-10-01')")
+        const filters = parseTransactionFilters(new URLSearchParams({ category: "Minuman", subcategory: "Kopi", account: String(accountId) }))
+        const page = await readTransactionPage(connection, transactionConditions(filters), 2, 2)
+        expect(page).toMatchObject({ total: 26, page: 2, summary: { income: 0, expense: 2600 } })
+        expect(page.items).toHaveLength(2)
+        expect(page.items.every((item) => item.category === "Minuman" && item.subcategory === "Kopi")).toBe(true)
+        const search = parseTransactionFilters(new URLSearchParams({ search: "coffee", account: String(accountId) }))
+        expect(await readTransactionPage(connection, transactionConditions(search), 1, 25)).toMatchObject({ total: 26 })
+        expect((await readBudgets(connection, "2026-10-01", "2026-11-01", "2026-09-01")).find((row) => row.category === "Minuman"))
+          .toMatchObject({ spent: 3100, budget: 5000 })
+        const dashboard = await readDashboardLedger(connection, {
+          historyStart: "2026-10-01", historyEnd: "2026-11-01", previousStart: "2026-09-01",
+          periodEnd: "2026-11-01", recentStart: "2026-10-01", today: "2026-10-23",
+        })
+        expect(dashboard.transactions.find((row) => row.category === "Minuman")).toMatchObject({ amount: 3100 })
+        await client.query("SELECT set_config('app.user_id', $1, true)", [userB])
+        expect(await readTransactionPage(connection, transactionConditions(filters), 1, 25)).toMatchObject({ items: [], total: 0 })
+        expect((await readBudgets(connection, "2026-10-01", "2026-11-01", "2026-09-01")).some((row) => row.category === "Minuman")).toBe(false)
+      } finally {
+        await client.query("ROLLBACK TO SAVEPOINT category_fixture")
+      }
+    })
   })
 
   it("automatically assigns new rows and isolates reads, updates, and deletes", async () => {

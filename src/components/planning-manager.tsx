@@ -40,7 +40,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select"
-import { expenseCategories, getToday, incomeCategories } from "@/lib/finance"
+import { getToday } from "@/lib/finance"
+import { CategoryFields } from "./category-fields"
 import { requestJson, jsonBody } from "@/lib/client-api"
 import { useRemoteData } from "@/lib/use-remote-data"
 import type { Account } from "@/lib/types"
@@ -51,6 +52,7 @@ type Recurring = {
   type: "income" | "expense" | "transfer"
   amount: number
   category: string
+  subcategory: string | null
   accountId: number
   frequency: "weekly" | "monthly"
   startDate: string
@@ -240,6 +242,7 @@ export function PlanningManager() {
                     <CalendarClock className="mt-1 h-5 w-5 shrink-0 text-primary" />
                     <div>
                       <p className="font-medium">{item.name}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{t(item.category)}{item.subcategory ? " / " + t(item.subcategory) : ""}</p>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {t(item.type)} · {formatCurrency(item.amount)} ·{" "}
                         {t(item.frequency)}
@@ -382,6 +385,7 @@ function AddSchedule({
   const [type, setType] = useState<Recurring["type"]>("expense")
   const [amount, setAmount] = useState("")
   const [category, setCategory] = useState("")
+  const [subcategory, setSubcategory] = useState<string | null>(null)
   const [accountId, setAccountId] = useState("")
   const [frequency, setFrequency] = useState<"weekly" | "monthly">("monthly")
   const [startDate, setStartDate] = useState(getToday())
@@ -403,6 +407,7 @@ function AddSchedule({
           type,
           amount,
           category,
+          subcategory,
           accountId,
           frequency,
           startDate,
@@ -416,6 +421,7 @@ function AddSchedule({
       setName("")
       setAmount("")
       setCategory("")
+      setSubcategory(null)
       setAccountId("")
       setDescription("")
       setEndDate("")
@@ -440,6 +446,7 @@ function AddSchedule({
             setType(schedule.type)
             setAmount(String(schedule.amount))
             setCategory(schedule.category)
+            setSubcategory(schedule.subcategory)
             setAccountId(String(schedule.accountId))
             setFrequency(schedule.frequency)
             setStartDate(schedule.startDate)
@@ -470,7 +477,7 @@ function AddSchedule({
           {t(schedule ? "edit" : "addRecurring")}
         </Button>
       </DialogTrigger>
-      <DialogContent showCloseButton={!busy}>
+      <DialogContent showCloseButton={!busy} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {t(schedule ? "editSchedule" : "addRecurring")}
@@ -509,6 +516,7 @@ function AddSchedule({
                 onValueChange={(value) => {
                   setType(value as Recurring["type"])
                   setCategory(value === "transfer" ? "Transfer" : "")
+                  setSubcategory(null)
                 }}
               >
                 <SelectTrigger id="schedule-type">
@@ -524,23 +532,8 @@ function AddSchedule({
               </Select>
             </Field>
             {type !== "transfer" && (
-              <Field id="schedule-category" label={t("category")} required>
-                <Select value={category} onValueChange={setCategory} required>
-                  <SelectTrigger id="schedule-category">
-                    <SelectValue placeholder={t("chooseCategory")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(type === "income"
-                      ? incomeCategories
-                      : expenseCategories
-                    ).map((item) => (
-                      <SelectItem key={item} value={item}>
-                        {t(item)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
+              <CategoryFields id="schedule" type={type} category={category} subcategory={subcategory}
+                onChange={(category, subcategory) => { setCategory(category); setSubcategory(subcategory) }} />
             )}
             <Field id="schedule-account" label={t("account")} required>
               <Select
