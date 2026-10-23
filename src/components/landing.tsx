@@ -32,7 +32,7 @@ export function Landing() {
               <Button
                 asChild
                 size="lg"
-                className="min-h-12 bg-brand text-white hover:bg-brand-active"
+                className="min-h-12 bg-brand text-white hover:bg-brand-hover"
               >
                 <Link href="/sign-up">{t("signUp")}</Link>
               </Button>
@@ -47,13 +47,13 @@ export function Landing() {
               description={t("landingExampleNote")}
               empty={t("noData")}
               data={[
-                { name: t("landingFood"), value: 1500000, color: "#0052ff" },
+                { name: t("landingFood"), value: 1500000, color: "var(--chart-1)" },
                 {
                   name: t("landingTransport"),
                   value: 500000,
-                  color: "#475569",
+                  color: "var(--chart-3)",
                 },
-                { name: t("landingBills"), value: 1000000, color: "#b45309" },
+                { name: t("landingBills"), value: 1000000, color: "var(--chart-4)" },
               ]}
             />
           </div>

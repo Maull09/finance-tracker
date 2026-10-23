@@ -4,6 +4,7 @@ import { LanguageProvider } from "@/components/language-provider"
 import { FeedbackProvider } from "@/components/feedback"
 import { en } from "@/lib/i18n/en"
 import { siteUrl } from "@/lib/site"
+import { themeInitializationScript } from "@/lib/theme"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -32,7 +33,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: themeInitializationScript }} /></head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

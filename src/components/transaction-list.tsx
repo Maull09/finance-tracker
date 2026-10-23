@@ -46,9 +46,9 @@ type TransactionPage = {
   groups: TransactionGroupSummary[]
 }
 const colors = {
-  income: "text-emerald-700 bg-emerald-50",
-  expense: "text-rose-700 bg-rose-50",
-  transfer: "text-sky-700 bg-sky-50",
+  income: "text-positive bg-positive-soft",
+  expense: "text-negative bg-negative-soft",
+  transfer: "text-brand-active bg-brand-soft",
 }
 const noAccounts: Account[] = []
 
@@ -306,7 +306,7 @@ export function TransactionList() {
             <p
               id="filter-date-error"
               role="alert"
-              className="text-sm text-rose-700"
+              className="text-sm text-negative"
             >
               {t("filterDateError")}
             </p>
@@ -328,8 +328,8 @@ export function TransactionList() {
           <>
             <div className="grid gap-3 sm:grid-cols-3">
               {[
-                ["matchingIncome", data.summary.income, "text-emerald-700"],
-                ["matchingExpense", data.summary.expense, "text-rose-700"],
+                ["matchingIncome", data.summary.income, "text-positive"],
+                ["matchingExpense", data.summary.expense, "text-negative"],
                 [
                   "matchingNet",
                   data.summary.income - data.summary.expense,
@@ -482,9 +482,9 @@ export function TransactionList() {
                             className={
                               "whitespace-nowrap p-4 text-right font-semibold tabular-nums " +
                               (item.type === "expense"
-                                ? "text-rose-700"
+                                ? "text-negative"
                                 : item.type === "income"
-                                  ? "text-emerald-700"
+                                  ? "text-positive"
                                   : "")
                             }
                           >

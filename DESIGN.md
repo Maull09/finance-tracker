@@ -30,6 +30,12 @@ Use the blue-led palette below. It replaces the previous teal treatment througho
 
 Do not introduce teal for status, navigation, controls, or charts. Colour reinforces meaning; labels, signs, and amounts must still communicate the state without colour.
 
+### Appearance
+
+Assumption: users want a comfortable view for recording and reviewing finances in different lighting. Provide a labelled appearance selector in the dashboard and public headers with Light, Dark, and System options in both languages. Default to System, remember the choice in this browser, follow device changes only in System mode, and apply the saved appearance before the page paints. Changing appearance affects presentation only. Keep native controls, dialogs, chart tooltips, errors, and financial status colours readable in both modes; preserve visible keyboard focus and 44px controls.
+
+Dark mode retains Geist, the existing layout, quiet borders, and blue primary actions. Use Canvas `#101318`, Surface `#191E26`, Ink `#F1F3F7`, Body `#AFB8C6`, Hairline `#3F4B5F`, selected blue surface `#1B2D50`, selected/link text `#A8C4FF`, Positive `#6EE7B7`, Warning `#FCD34D`, and Negative `#FDA4AF`. Financial amounts remain the visual anchor. Status backgrounds use subdued matching dark tones, and chart labels, grid lines, and tooltips follow semantic tokens. Primary action backgrounds stay `#0052FF` with white text and `#003ECC` on hover. Avoid a theme-switch animation or a bright loading flash.
+
 ### Typography
 
 Use the locally loaded Geist family for all interface text. It keeps screens compact and legible while matching the existing application stack.
@@ -56,7 +62,7 @@ Indonesian currency displays use a nonbreaking space after `Rp` (for example, `R
 
 ## Components and states
 
-- **Landing:** Use a left-aligned, compact value proposition alongside the real report component with explicitly labelled example data. Follow with a concise feature overview, a three-action getting-started sequence, and native FAQ disclosures. Keep the same light, blue-led theme throughout.
+- **Landing:** Use a left-aligned, compact value proposition alongside the real report component with explicitly labelled example data. Follow with a concise feature overview, a three-action getting-started sequence, and native FAQ disclosures. Keep the same active, blue-led theme throughout.
 - **Navigation:** Group destinations into everyday records, planning, and analysis without changing their names or hash destinations. Make the selected page visible, and keep account management near account balances.
 - **Touch and keyboard:** Buttons, navigation, tabs, and dialog-close controls have at least a 44px touch target. Dialog headings reserve space for the close control; scrollable tables expose a labelled, keyboard-focusable region.
 - **Page actions:** Align filters and actions on their bottom edge. Actions named Add open the relevant form; empty states show an available next action. Amounts wrap inside their containers rather than widening the page.

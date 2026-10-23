@@ -80,7 +80,7 @@ export function AccountSummary() {
               <p
                 className={
                   "mt-4 text-xl font-semibold tabular-nums " +
-                  (account.balance < 0 ? "text-rose-700" : "")
+                  (account.balance < 0 ? "text-negative" : "")
                 }
               >
                 {formatCurrency(account.balance)}

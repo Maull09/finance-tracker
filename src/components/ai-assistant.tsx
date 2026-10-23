@@ -130,7 +130,7 @@ function Conversation({ id, onBusy, onReply }: { id: string; onBusy: (value: boo
   return (
     <section aria-label={t("ai")} className="min-w-0 overflow-hidden rounded-xl border bg-card">
       <div className="flex items-center gap-2 border-b px-4 py-3 text-sm sm:px-6">
-        <MessageSquare aria-hidden="true" className="size-4 text-brand" /><span className="font-medium">{t("ai")}</span>
+        <MessageSquare aria-hidden="true" className="size-4 text-brand-active" /><span className="font-medium">{t("ai")}</span>
         <span className="ml-auto text-xs text-muted-foreground">{t("aiLocal")}</span>
       </div>
       <div className="max-h-[65dvh] min-h-48 overflow-y-auto p-4 sm:p-6" role="log" aria-label={t("aiConversations")} aria-live="polite" tabIndex={0}>

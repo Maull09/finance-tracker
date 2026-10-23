@@ -196,7 +196,7 @@ export function AuthForm({
                     disabled={!clientReady || busy}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-12 bg-white"
+                    className="h-12 bg-card"
                   />
                 </div>
                 <div className="space-y-2">
@@ -216,7 +216,7 @@ export function AuthForm({
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       aria-describedby={signingUp ? "password-hint" : undefined}
-                      className="h-12 bg-white pr-12"
+                      className="h-12 bg-card pr-12"
                     />
                     <button
                       type="button"
@@ -225,7 +225,7 @@ export function AuthForm({
                         showPassword ? "authHidePassword" : "authShowPassword",
                       )}
                       aria-pressed={showPassword}
-                      className="absolute right-0 top-0 flex size-12 items-center justify-center rounded-md text-slate-600"
+                      className="absolute right-0 top-0 flex size-12 items-center justify-center rounded-md text-muted-foreground"
                     >
                       {showPassword ? (
                         <EyeOff className="size-5" aria-hidden="true" />
@@ -235,7 +235,7 @@ export function AuthForm({
                     </button>
                   </div>
                   {signingUp && (
-                    <p id="password-hint" className="text-sm text-slate-600">
+                    <p id="password-hint" className="text-sm text-muted-foreground">
                       {t("authPasswordHint")}
                     </p>
                   )}
@@ -263,14 +263,14 @@ export function AuthForm({
                           ? "auth-error"
                           : undefined
                       }
-                      className="h-12 bg-white"
+                      className="h-12 bg-card"
                     />
                   </div>
                 )}
                 <Button
                   type="submit"
                   disabled={!clientReady || busy}
-                  className="min-h-12 w-full bg-brand text-white hover:bg-brand-active"
+                  className="min-h-12 w-full bg-brand text-white hover:bg-brand-hover"
                 >
                   {t(busy ? "authWorking" : signingUp ? "signUp" : "signIn")}
                 </Button>
@@ -291,7 +291,7 @@ export function AuthForm({
               <p
                 id="auth-error"
                 role="alert"
-                className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+                className="mt-4 rounded-md border border-negative-border bg-negative-soft p-3 text-sm text-negative"
               >
                 {t(error)}
               </p>
@@ -302,7 +302,7 @@ export function AuthForm({
               </p>
             )}
             {!sent && (
-              <p className="mt-8 text-sm text-slate-600">
+              <p className="mt-8 text-sm text-muted-foreground">
                 {t(signingUp ? "authHasAccount" : "authNoAccount")}{" "}
                 <Link
                   className="inline-flex min-h-11 items-center font-medium text-brand-active underline underline-offset-4"

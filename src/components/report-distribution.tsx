@@ -2,6 +2,7 @@
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
 import { useLanguage } from "./language-provider"
+import { chartTooltipStyle, chartTooltipItemStyle } from "@/lib/chart-theme"
 import {
   Card,
   CardContent,
@@ -53,12 +54,13 @@ export function ReportDistribution({
                   innerRadius={58}
                   outerRadius={85}
                   paddingAngle={2}
+                  stroke="var(--card)"
                 >
                   {data.map((item) => (
                     <Cell key={item.name} fill={item.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                <Tooltip contentStyle={chartTooltipStyle} itemStyle={chartTooltipItemStyle} formatter={(value: number) => formatCurrency(value)} />
               </PieChart>
             </ResponsiveContainer>
             <table className="mt-5 w-full text-xs sm:text-sm">

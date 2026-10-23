@@ -242,7 +242,7 @@ export function BudgetManager() {
                 <p
                   className={
                     "mt-2 text-xl font-semibold tabular-nums " +
-                    (Number(value) < 0 ? "text-rose-700" : "")
+                    (Number(value) < 0 ? "text-negative" : "")
                   }
                 >
                   {formatCurrency(Number(value))}
@@ -299,9 +299,9 @@ function BudgetCard({
     effective > 0 ? Math.round((budget.spent / effective) * 100) : 0
   const tone =
     budget.spent > effective
-      ? "text-rose-700"
+      ? "text-negative"
       : percentage >= 80
-        ? "text-amber-700"
+        ? "text-warning"
         : "text-brand-active"
   return (
     <Card>

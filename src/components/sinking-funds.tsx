@@ -61,7 +61,7 @@ export function SinkingFunds() {
       ) : (
         data && (
           <>
-            <p className="rounded-lg border bg-white p-4 text-sm text-muted-foreground">
+            <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
               {t("fundHint")}
             </p>
             {!data.accounts.length ? (
@@ -126,7 +126,7 @@ function FundCard({
     }
   }
   return (
-    <section className="space-y-4 rounded-xl border bg-white p-5">
+    <section className="space-y-4 rounded-xl border bg-card p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="break-words text-lg font-semibold">{fund.name}</h2>
@@ -178,7 +178,7 @@ function FundCard({
         </span>
       </p>
       {fund.targetDate < getToday() && fund.allocated < fund.targetAmount && (
-        <p className="text-sm text-amber-900">{t("overdue")}</p>
+        <p className="text-sm text-warning">{t("overdue")}</p>
       )}
       <div className="flex flex-wrap gap-2">
         <FundEntryForm fund={fund} account={account} kind="allocate" />

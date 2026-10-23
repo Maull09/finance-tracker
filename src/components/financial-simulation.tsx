@@ -96,7 +96,7 @@ function PlannedCashflowList({
       {entries.map((entry, index) => (
         <div
           key={index}
-          className="grid gap-3 rounded-lg border bg-slate-50 p-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"
+          className="grid gap-3 rounded-lg border bg-muted p-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"
         >
           <Field id={`${kind}-name-${index}`} label={labels.name} required>
             <Input
@@ -141,7 +141,7 @@ function PlannedCashflowList({
             type="button"
             variant="ghost"
             size="icon"
-            className="text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+            className="text-negative hover:bg-negative-soft hover:text-negative"
             onClick={() => onRemove(index)}
             aria-label={labels.remove}
           >
@@ -281,7 +281,7 @@ export function FinancialSimulation() {
       <div className="grid gap-4 lg:grid-cols-3">
         <section
           aria-label={t("currentCash")}
-          className="min-w-0 rounded-xl border bg-white p-5"
+          className="min-w-0 rounded-xl border bg-card p-5"
         >
           <p className="text-sm text-muted-foreground">{t("currentCash")}</p>
           {balance.loading ? (
@@ -302,7 +302,7 @@ export function FinancialSimulation() {
         </section>
         <section
           aria-label={t("currentGrossWorth")}
-          className="min-w-0 rounded-xl border bg-white p-5"
+          className="min-w-0 rounded-xl border bg-card p-5"
         >
           <p className="text-sm text-muted-foreground">
             {t("currentGrossWorth")}
@@ -310,7 +310,7 @@ export function FinancialSimulation() {
           {balance.loading ? (
             <p role="status" className="mt-2 text-lg font-semibold">{t("loading")}</p>
           ) : balance.data ? (
-            <p className={`mt-2 break-words text-2xl font-semibold tabular-nums ${balance.data.grossWorth < 0 ? "text-rose-700" : "text-brand-active"}`}>
+            <p className={`mt-2 break-words text-2xl font-semibold tabular-nums ${balance.data.grossWorth < 0 ? "text-negative" : "text-brand-active"}`}>
               {formatCurrency(balance.data.grossWorth)}
             </p>
           ) : null}
@@ -320,7 +320,7 @@ export function FinancialSimulation() {
         </section>
         <section
           aria-label={t("currentNetWorth")}
-          className="min-w-0 rounded-xl border bg-white p-5"
+          className="min-w-0 rounded-xl border bg-card p-5"
         >
           <p className="text-sm text-muted-foreground">
             {t(balance.data?.netWorth === null ? "currentKnownNetWorth" : "currentNetWorth")}
@@ -328,7 +328,7 @@ export function FinancialSimulation() {
           {balance.loading ? (
             <p role="status" className="mt-2 text-lg font-semibold">{t("loading")}</p>
           ) : balance.data ? (
-            <p className={`mt-2 break-words text-2xl font-semibold tabular-nums ${balance.data.knownNetWorth < 0 ? "text-rose-700" : "text-brand-active"}`}>
+            <p className={`mt-2 break-words text-2xl font-semibold tabular-nums ${balance.data.knownNetWorth < 0 ? "text-negative" : "text-brand-active"}`}>
               {formatCurrency(balance.data.knownNetWorth)}
             </p>
           ) : null}
@@ -336,7 +336,7 @@ export function FinancialSimulation() {
             {t("netWorthDescription")}
           </p>
           {balance.data?.netWorth === null && (
-            <p role="status" className="mt-3 text-sm text-amber-900">
+            <p role="status" className="mt-3 text-sm text-warning">
               {t("incompleteNetWorthProjection")}
             </p>
           )}
@@ -344,7 +344,7 @@ export function FinancialSimulation() {
       </div>
       <form
         onSubmit={calculate}
-        className="space-y-5 rounded-xl border bg-white p-5"
+        className="space-y-5 rounded-xl border bg-card p-5"
       >
         <fieldset disabled={busy} className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
@@ -418,26 +418,26 @@ export function FinancialSimulation() {
             {t("plannedIncomeCount", { count: result.extraIncomeCount })}{" "}
             {t("plannedExpenseCount", { count: result.extraExpenseCount })}
           </div>
-          <dl className="grid gap-4 rounded-xl border bg-white p-5 sm:grid-cols-2 xl:grid-cols-3">
+          <dl className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2 xl:grid-cols-3">
             {[
               [
                 "projectedCash",
                 result.scenario,
-                result.scenario < 0 ? "text-rose-700" : "text-brand-active",
+                result.scenario < 0 ? "text-negative" : "text-brand-active",
               ],
               ["projectedGrossWorth", result.projectedGrossWorth,
-                result.projectedGrossWorth < 0 ? "text-rose-700" : "text-brand-active"],
+                result.projectedGrossWorth < 0 ? "text-negative" : "text-brand-active"],
               [result.projectedNetWorth === null ? "projectedKnownNetWorth" : "projectedNetWorth", result.knownProjectedNetWorth,
-                result.knownProjectedNetWorth < 0 ? "text-rose-700" : "text-brand-active"],
+                result.knownProjectedNetWorth < 0 ? "text-negative" : "text-brand-active"],
               ["currentCash", result.currentBalance, ""],
               ["currentGrossWorth", result.grossWorth,
-                result.grossWorth < 0 ? "text-rose-700" : ""],
+                result.grossWorth < 0 ? "text-negative" : ""],
               [result.netWorth === null ? "currentKnownNetWorth" : "currentNetWorth", result.knownNetWorth,
-                result.knownNetWorth < 0 ? "text-rose-700" : ""],
-              ["scheduledIncome", result.scheduledIncome, "text-emerald-700"],
-              ["addedIncome", result.extraIncome, "text-emerald-700"],
-              ["scheduledExpenses", result.scheduledExpense, "text-rose-700"],
-              ["addedExpenses", result.extraExpense, "text-rose-700"],
+                result.knownNetWorth < 0 ? "text-negative" : ""],
+              ["scheduledIncome", result.scheduledIncome, "text-positive"],
+              ["addedIncome", result.extraIncome, "text-positive"],
+              ["scheduledExpenses", result.scheduledExpense, "text-negative"],
+              ["addedExpenses", result.extraExpense, "text-negative"],
             ].map(([key, value, tone]) => (
               <div key={String(key)} className="min-w-0">
                 <dt className="text-sm text-muted-foreground">
@@ -455,14 +455,14 @@ export function FinancialSimulation() {
             {t("netWorthProjectionHint")}
           </p>
           {result.netWorth === null && (
-            <p role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <p role="status" className="rounded-lg border border-warning-border bg-warning-soft p-4 text-sm text-warning">
               {t("incompleteNetWorthProjection")}
             </p>
           )}
           {result.rows.some((row) => row.scenario < 0) && (
             <p
               role="status"
-              className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+              className="rounded-lg border border-warning-border bg-warning-soft p-4 text-sm text-warning"
             >
               {t("negativeScenario")}
             </p>
@@ -471,7 +471,7 @@ export function FinancialSimulation() {
             role="region"
             aria-label={t("monthlyProjection")}
             tabIndex={0}
-            className="overflow-x-auto rounded-xl border bg-white"
+            className="overflow-x-auto rounded-xl border bg-card"
           >
             <table className="w-full min-w-[1080px] text-sm">
               <caption className="sr-only">{t("monthlyProjection")}</caption>
@@ -516,7 +516,7 @@ export function FinancialSimulation() {
                     ].map((amount, index) => (
                       <td
                         key={index}
-                        className={`p-3 text-right tabular-nums ${amount < 0 ? "text-rose-700" : ""}`}
+                        className={`p-3 text-right tabular-nums ${amount < 0 ? "text-negative" : ""}`}
                       >
                         {formatCurrency(amount)}
                       </td>

@@ -143,7 +143,7 @@ function DebtCard({ debt, accounts }: { debt: Debt; accounts: Account[] }) {
               "shrink-0 rounded-md px-2 py-1 text-xs font-medium " +
               (debt.status === "paid"
                 ? "bg-brand-soft text-brand-active"
-                : "bg-amber-50 text-amber-800")
+                : "bg-warning-soft text-warning")
             }
           >
             {t(debt.status)}
@@ -275,7 +275,7 @@ function DebtCard({ debt, accounts }: { debt: Debt; accounts: Account[] }) {
           </Dialog>
         )}
         {remaining > 0 && accounts.length === 0 && (
-          <p className="text-xs text-amber-800">{t("addAnAccountFirst")}</p>
+          <p className="text-xs text-warning">{t("addAnAccountFirst")}</p>
         )}
         <div className="flex flex-wrap gap-1 border-t pt-3">
           <AddDebtForm debt={debt} />

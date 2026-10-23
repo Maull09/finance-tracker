@@ -180,7 +180,7 @@ export function PlanningManager() {
                 className={
                   "mt-2 text-3xl font-semibold tabular-nums " +
                   (forecast.forecastBalance < 0
-                    ? "text-rose-700"
+                    ? "text-negative"
                     : "text-foreground")
                 }
               >
