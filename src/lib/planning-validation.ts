@@ -161,7 +161,7 @@ export function parseOccurrenceRecording(value: unknown) {
   if (!isDate(body.scheduledDate) || body.scheduledDate < "1900-01-01" || body.scheduledDate > "2100-12-31" ||
       !isDate(body.date) || body.date < "1900-01-01" || body.date > getToday())
     throw new FinanceError("invalidInput")
-  return { scheduledDate: body.scheduledDate, date: body.date }
+  return { scheduledDate: body.scheduledDate, date: body.date, amount: integerInput(body.amount, 1, 2_147_483_647) }
 }
 
 export function parseSimulation(value: unknown) {

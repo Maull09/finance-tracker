@@ -53,34 +53,58 @@ describe("recording early or late from the financial calendar", () => {
     })
     return input
   }
+  async function setAmount(dialog: HTMLElement, value: string) {
+    const input = dialog.querySelector<HTMLInputElement>('input[type="number"]')!
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value)
+      input.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    return input
+  }
   it.each(["en", "id"] as const)("offers early and late recording in %s without a payment action on debt reminders", async (locale) => {
     mocks.locale = locale
     const dialog = await open()
     expect(dialog.textContent).toContain(messages[locale].recordOccurrenceHint)
     expect(dialog.textContent).toContain(messages[locale].actualTransactionDate)
+    expect(dialog.textContent).toContain(messages[locale].scheduledAmount)
+    expect(dialog.textContent).toContain(messages[locale].actualTransactionAmount)
+    expect(dialog.textContent).toContain(messages[locale].actualTransactionAmountHint)
+    expect(dialog.querySelector<HTMLInputElement>('input[type="number"]')?.value).toBe("1000000")
     expect(dialog.textContent).toContain("Bank")
     expect(dialog.querySelector<HTMLInputElement>('input[type="date"]')?.value).toBe("2026-10-23")
     expect(dialog.querySelectorAll('input[type="date"]')).toHaveLength(1)
     const debt = [...container.querySelectorAll("li")].find((row) => row.textContent?.includes("Loan due"))!
     expect(debt.querySelector("button")).toBeNull()
   })
-  it("submits a future scheduled occurrence with the selected actual date", async () => {
+  it("submits a future scheduled occurrence with the selected actual date and amount", async () => {
     mocks.request.mockResolvedValue({ id: 1 })
     const dialog = await open()
     await setDate(dialog, "2026-10-20")
+    await setAmount(dialog, "750000")
+    expect(dialog.textContent).toContain(formatCurrency(750000))
+    expect(dialog.textContent).toContain(formatCurrency(1000000))
     await act(async () => dialog.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })))
     const [url, request] = mocks.request.mock.calls[0]
     expect(url).toBe("/api/recurring/1/execute")
-    expect(JSON.parse(request.body)).toEqual({ scheduledDate: "2026-10-31", date: "2026-10-20" })
+    expect(JSON.parse(request.body)).toEqual({ scheduledDate: "2026-10-31", date: "2026-10-20", amount: 750000 })
   })
   it("keeps the actual date and selected occurrence after a failed late recording", async () => {
     mocks.request.mockRejectedValue(new Error("scheduleAlreadyRecorded"))
     const dialog = await open("Late salary")
     const input = await setDate(dialog, "2026-10-22")
+    const amount = await setAmount(dialog, "5500000")
     await act(async () => dialog.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })))
     expect(dialog.textContent).toContain(messages.en.scheduleAlreadyRecorded)
     expect(input.value).toBe("2026-10-22")
-    expect(JSON.parse(mocks.request.mock.calls[0][1].body)).toEqual({ scheduledDate: "2026-10-01", date: "2026-10-22" })
+    expect(amount.value).toBe("5500000")
+    expect(JSON.parse(mocks.request.mock.calls[0][1].body)).toEqual({ scheduledDate: "2026-10-01", date: "2026-10-22", amount: 5500000 })
+  })
+  it.each(["", "0", "-1", "1.5", "2147483648"])("prevents invalid actual amount %s from creating a transaction", async (amount) => {
+    const dialog = await open()
+    await setAmount(dialog, amount)
+    expect(dialog.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true)
+    await act(async () => dialog.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })))
+    expect(mocks.request).not.toHaveBeenCalled()
   })
   it("prevents future actual dates from creating a transaction", async () => {
     const dialog = await open()

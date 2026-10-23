@@ -112,23 +112,25 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
         const account = (await client.query("INSERT INTO accounts(name,type,initial_balance) VALUES ('Occurrence cash','cash',1000000) RETURNING id")).rows[0].id
         const id = (await client.query("INSERT INTO recurring_transactions(name,type,amount,category,subcategory,account_id,start_date,end_date) VALUES ('Coffee','expense',25000,'Minuman','Kopi',$1,'2026-01-31','2026-03-31') RETURNING id", [account])).rows[0].id
         const readSchedule = async () => (await recurringSchedulesQuery(connection).where(eq(recurringTransactions.id, id)))[0]
-        const early = await recordRecurringOccurrence(connection, id, { scheduledDate: "2026-03-31", date: "2026-01-20" })
-        expect(early).toMatchObject({ date: "2026-01-20", scheduledDate: "2026-03-31", amount: 25000, subcategory: "Kopi" })
+        const early = await recordRecurringOccurrence(connection, id, { scheduledDate: "2026-03-31", date: "2026-01-20", amount: 30000 })
+        expect(early).toMatchObject({ date: "2026-01-20", scheduledDate: "2026-03-31", amount: 30000, subcategory: "Kopi" })
         expect(scheduleOccurrences(await readSchedule(), "2026-01-01", "2026-04-30").map((item) => item.date)).toEqual(["2026-01-31", "2026-02-28"])
-        const late = await recordRecurringOccurrence(connection, id, { scheduledDate: "2026-01-31", date: "2026-04-15" })
-        await recordRecurringOccurrence(connection, id, { scheduledDate: "2026-02-28", date: "2026-04-15" })
+        expect((await readSchedule()).amount).toBe(25000)
+        expect(scheduleOccurrences(await readSchedule(), "2026-01-01", "2026-04-30").map((item) => item.amount)).toEqual([25000, 25000])
+        const late = await recordRecurringOccurrence(connection, id, { scheduledDate: "2026-01-31", date: "2026-04-15", amount: 40000 })
+        await recordRecurringOccurrence(connection, id, { scheduledDate: "2026-02-28", date: "2026-04-15", amount: 25000 })
         expect((await client.query("SELECT scheduled_date::text FROM transactions WHERE recurring_id=$1 ORDER BY scheduled_date", [id])).rows)
           .toEqual([{ scheduled_date: "2026-01-31" }, { scheduled_date: "2026-02-28" }, { scheduled_date: "2026-03-31" }])
         expect((await readSchedule()).recordedDates.sort()).toEqual(["2026-01-31", "2026-02-28", "2026-03-31"])
         expect(scheduleOccurrences(await readSchedule(), "2026-01-01", "2026-04-30")).toEqual([])
-        await expect(recordRecurringOccurrence(connection, id, { scheduledDate: "2026-03-31", date: "2026-04-16" })).rejects.toMatchObject({ code: "scheduleAlreadyRecorded" })
-        expect((await accountSummaryQuery(connection, [account]))[0].balance).toBe(925000)
+        await expect(recordRecurringOccurrence(connection, id, { scheduledDate: "2026-03-31", date: "2026-04-16", amount: 30000 })).rejects.toMatchObject({ code: "scheduleAlreadyRecorded" })
+        expect((await accountSummaryQuery(connection, [account]))[0].balance).toBe(905000)
         const filters = parseTransactionFilters(new URLSearchParams({ account: String(account), from: "2026-04-01", to: "2026-04-30" }))
-        expect(await readTransactionPage(connection, transactionConditions(filters), 1, 25)).toMatchObject({ total: 2, summary: { expense: 50000 } })
+        expect(await readTransactionPage(connection, transactionConditions(filters), 1, 25)).toMatchObject({ total: 2, summary: { expense: 65000 } })
         await client.query("DELETE FROM transactions WHERE id=$1", [late.id])
         expect(scheduleOccurrences(await readSchedule(), "2026-01-01", "2026-04-30").map((item) => item.date)).toEqual(["2026-01-31"])
         await client.query("DELETE FROM recurring_transactions WHERE id=$1", [id])
-        expect((await client.query("SELECT amount,recurring_id FROM transactions WHERE id=$1", [early.id])).rows[0]).toEqual({ amount: 25000, recurring_id: null })
+        expect((await client.query("SELECT amount,recurring_id FROM transactions WHERE id=$1", [early.id])).rows[0]).toEqual({ amount: 30000, recurring_id: null })
       } finally {
         await client.query("ROLLBACK TO SAVEPOINT occurrence_fixture")
       }
@@ -138,7 +140,7 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
   it("rejects links to another user's schedule", async () => {
     const id = (await asUser(userA, () => client.query("INSERT INTO recurring_transactions(name,type,amount,category,account_id,start_date) VALUES ('Private schedule','expense',100,'Makanan',$1,'2026-10-01') RETURNING id", [accountA.id]))).rows[0].id
     try {
-      await expect(asUser(userB, () => recordRecurringOccurrence(drizzle(client), id, { scheduledDate: "2026-10-01", date: "2026-10-02" }))).rejects.toMatchObject({ code: "recordMissing" })
+      await expect(asUser(userB, () => recordRecurringOccurrence(drizzle(client), id, { scheduledDate: "2026-10-01", date: "2026-10-02", amount: 100 }))).rejects.toMatchObject({ code: "recordMissing" })
       await expect(asUser(userB, () => client.query("INSERT INTO transactions(type,amount,category,account_id,date,recurring_id,scheduled_date) VALUES ('expense',100,'Makanan',$1,'2026-10-02',$2,'2026-10-01')", [accountB.id, id]))).rejects.toMatchObject({ code: "42501" })
     } finally {
       await asUser(userA, () => client.query("DELETE FROM recurring_transactions WHERE id=$1", [id]))
@@ -155,7 +157,7 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
         try {
           await connection.query("SET LOCAL ROLE finance_user")
           await connection.query("SELECT set_config('app.user_id', $1, true)", [userA])
-          const transaction = await recordRecurringOccurrence(drizzle(connection), id, { scheduledDate: "2026-10-01", date: "2026-10-02" })
+          const transaction = await recordRecurringOccurrence(drizzle(connection), id, { scheduledDate: "2026-10-01", date: "2026-10-02", amount: 100 })
           await connection.query("COMMIT")
           return transaction
         } catch (error) {

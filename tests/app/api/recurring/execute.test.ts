@@ -17,7 +17,7 @@ const schedule = {
   accountId: 1, destinationAccountId: null, startDate: "2026-09-30", endDate: null,
   frequency: "monthly", lastExecutedDate: null, recordedThroughDate: null, recordedDates: [], description: "Coffee",
 }
-function record(body: unknown = { scheduledDate: "2026-09-30", date: "2026-10-23" }) {
+function record(body: unknown = { scheduledDate: "2026-09-30", date: "2026-10-23", amount: 25000 }) {
   return POST(new NextRequest("http://localhost/api/recurring/1/execute", { method: "POST", body: JSON.stringify(body) }), { params: Promise.resolve({ id: "1" }) })
 }
 
@@ -43,7 +43,17 @@ describe("recording scheduled occurrences", () => {
   })
   it("records before a schedule starts using today's actual date", async () => {
     state.readSchedule.mockResolvedValue([{ ...schedule, startDate: "2026-10-31" }])
-    expect((await record({ scheduledDate: "2026-10-31", date: "2026-10-23" })).status).toBe(201)
+    expect((await record({ scheduledDate: "2026-10-31", date: "2026-10-23", amount: 25000 })).status).toBe(201)
+  })
+  it.each([20000, 30000, 2147483647])("records the actual amount %s without changing the schedule amount", async (amount) => {
+    expect((await record({ scheduledDate: "2026-09-30", date: "2026-10-23", amount })).status).toBe(201)
+    expect(state.values).toHaveBeenCalledWith(expect.objectContaining({ amount }))
+    expect(state.set).toHaveBeenCalledWith({ lastExecutedDate: expect.anything() })
+  })
+  it.each([undefined, null, "", "abc", "1e3", true, 0, -1, 1.5, 2147483648])("rejects invalid actual amount %s before reading financial data", async (amount) => {
+    expect((await record({ scheduledDate: "2026-09-30", date: "2026-10-23", amount })).status).toBe(400)
+    expect(state.select).not.toHaveBeenCalled()
+    expect(state.insert).not.toHaveBeenCalled()
   })
   it("records an overdue occurrence after the schedule ends", async () => {
     state.readSchedule.mockResolvedValue([{ ...schedule, endDate: "2026-09-30" }])
@@ -64,10 +74,10 @@ describe("recording scheduled occurrences", () => {
     expect(state.insert).not.toHaveBeenCalled()
   })
   it.each(["2026-10-01", "2026-08-30"])("rejects a non-occurrence date %s", async (scheduledDate) => {
-    expect((await record({ scheduledDate, date: "2026-10-23" })).status).toBe(409)
+    expect((await record({ scheduledDate, date: "2026-10-23", amount: 25000 })).status).toBe(409)
     expect(state.insert).not.toHaveBeenCalled()
   })
-  it.each([{}, { scheduledDate: "2026-09-30", date: "2026-10-24" }, { scheduledDate: "2026-02-30", date: "2026-10-23" }])("validates dates before reading financial data", async (body) => {
+  it.each([{}, { scheduledDate: "2026-09-30", date: "2026-10-24", amount: 25000 }, { scheduledDate: "2026-02-30", date: "2026-10-23", amount: 25000 }])("validates dates before reading financial data", async (body) => {
     expect((await record(body)).status).toBe(400)
     expect(state.select).not.toHaveBeenCalled()
   })

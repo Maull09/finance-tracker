@@ -25,7 +25,7 @@ export async function recordRecurringOccurrence(
 
   const [transaction] = await connection.insert(transactions).values({
     type: schedule.type,
-    amount: schedule.amount,
+    amount: input.amount,
     category: schedule.category,
     subcategory: schedule.subcategory,
     description: schedule.description,
