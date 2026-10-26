@@ -87,7 +87,9 @@ export function scheduleOccurrences(
 
 export function nextPendingOccurrence(schedule: Schedule, today: string) {
   const latestDate = [today, schedule.startDate, schedule.recordedThroughDate ?? "", ...(schedule.recordedDates ?? [])].sort().at(-1)!
-  return scheduleOccurrences(schedule, schedule.startDate, getNextMonthStart(latestDate.slice(0, 7)))[0] ?? null
+  const nextMonth = getNextMonthStart(latestDate.slice(0, 7))
+  const searchEnd = getNextMonthStart(nextMonth.slice(0, 7))
+  return scheduleOccurrences(schedule, schedule.startDate, searchEnd)[0] ?? null
 }
 
 export function simulateCashflow(

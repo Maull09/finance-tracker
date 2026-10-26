@@ -78,6 +78,15 @@ describe("recurring calendar and projections", () => {
     expect(nextPendingOccurrence({ ...salary, endDate: "2026-01-31" }, "2026-03-01")?.date).toBe("2026-01-31")
     expect(nextPendingOccurrence({ ...salary, endDate: "2026-01-31", recordedDates: ["2026-01-31"] }, "2026-03-01")).toBeNull()
   })
+  it.each([
+    { frequency: "monthly", startDate: "2026-10-26", recordedDates: ["2026-10-26"], today: "2026-10-26", next: "2026-11-26" },
+    { frequency: "weekly", startDate: "2026-10-26", recordedDates: ["2026-10-26"], today: "2026-10-26", next: "2026-11-02" },
+    { frequency: "monthly", startDate: "2026-01-31", recordedThroughDate: "2026-01-31", today: "2026-01-20", next: "2026-02-28" },
+    { frequency: "monthly", startDate: "2026-12-31", recordedDates: ["2026-12-31"], today: "2026-12-20", next: "2027-01-31" },
+    { frequency: "monthly", startDate: "2026-10-26", recordedThroughDate: "2026-10-26", recordedDates: ["2026-11-26"], today: "2026-10-26", next: "2026-12-26" },
+  ])("keeps $frequency schedules recordable after completing a period: $next", ({ today, next, ...schedule }) => {
+    expect(nextPendingOccurrence({ ...salary, ...schedule }, today)?.date).toBe(next)
+  })
   it("seeks directly into a distant calendar month without losing dates", () => {
     expect(
       scheduleOccurrences(
