@@ -1,0 +1,1 @@
+ALTER TABLE "reconciliations" ALTER COLUMN "actual_balance" SET DATA TYPE numeric(12, 2);

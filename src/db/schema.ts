@@ -356,7 +356,7 @@ export const reconciliations = pgTable(
     accountId: integer("account_id")
       .references(() => accounts.id)
       .notNull(),
-    actualBalance: integer("actual_balance").notNull(),
+    actualBalance: numeric("actual_balance", { precision: 12, scale: 2, mode: "number" }).notNull(),
     date: date("date").notNull(),
     note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),

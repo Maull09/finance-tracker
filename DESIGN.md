@@ -54,6 +54,8 @@ Indonesian currency displays use a nonbreaking space after `Rp` (for example, `R
 
 Manual transaction amounts accept up to two decimal places, using either a comma or a dot as the decimal separator without thousands separators (for example `243060,44`). Use a decimal keyboard, retain the raw input while editing, preview the localized IDR value, and reject extra decimal places rather than rounding them. Creation, editing, transfers, balances, and reports preserve the stored cents. Other planning and allocation fields retain their existing whole-IDR rules.
 
+Account reconciliation accepts zero, negative balances, and up to two decimals with either decimal separator. Show a localized balance preview and a short input hint. Preserve cents when comparing actual and recorded balances, and retain the entered value after failure. Reconciliation stores a comparison only; it never adjusts transactions or account opening balances.
+
 ### Spacing, shape, and elevation
 
 - Use a 4px rhythm: `4, 8, 12, 16, 24, 32, 48, 64`.

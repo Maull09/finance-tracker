@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs"
 import pg from "pg"
 import { drizzle } from "drizzle-orm/node-postgres"
 import { and, eq, isNotNull, isNull } from "drizzle-orm"
-import { aiDrafts, transactions, recurringTransactions } from "@/db/schema"
+import { aiDrafts, transactions, recurringTransactions, reconciliations } from "@/db/schema"
 import { decideDraft } from "@/lib/ai/confirmation"
 import { readLedger, readReservations } from "@/lib/server/ledger"
 import { readBalanceLedger, readReservedCash, accountSummaryQuery, goalSummaryQuery, debtSummaryQuery } from "@/lib/server/financial-queries"
@@ -38,6 +38,7 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
   let legacyId
   let legacyScheduleId
   let legacyTransactionId
+  let legacyReconciliationId
   let redisCacheUsed = false
 
   async function asUser(id, action) {
@@ -75,6 +76,9 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
         legacyScheduleId = (await client.query("INSERT INTO recurring_transactions(name,type,amount,category,account_id,start_date,last_executed_date) VALUES ('Old schedule','expense',5000,'Makanan',$1,'2026-08-31','2026-09-30') RETURNING id", [legacyId])).rows[0].id
         legacyTransactionId = (await client.query("INSERT INTO transactions(type,amount,category,date,account_id) VALUES ('expense',5000,'Makanan','2026-09-20',$1) RETURNING id", [legacyId])).rows[0].id
       }
+      if (migration.idx === 17) {
+        legacyReconciliationId = (await client.query("INSERT INTO reconciliations(account_id,actual_balance,date) VALUES ($1,12345,'2026-10-23') RETURNING id", [legacyId])).rows[0].id
+      }
       await client.query("BEGIN")
       for (const statement of readFileSync(`drizzle/${migration.tag}.sql`, "utf8").split("--> statement-breakpoint"))
         await client.query(statement)
@@ -99,7 +103,9 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
   it("applies migrations without losing legacy amounts or watchlist notes", async () => {
     expect((await client.query("SELECT initial_balance, user_id FROM accounts WHERE id = $1", [legacyId])).rows[0]).toEqual({ initial_balance: 12345, user_id: null })
     expect((await client.query("SELECT note FROM stock_watchlist")).rows[0].note).toBe("Legacy note")
-    expect(schemaIssues(loadSnapshot("0016"), await readDatabaseSchema(client))).toEqual([])
+    expect(schemaIssues(loadSnapshot("0017"), await readDatabaseSchema(client))).toEqual([])
+    expect((await client.query("SELECT actual_balance::float8 AS actual_balance, user_id FROM reconciliations WHERE id=$1", [legacyReconciliationId])).rows[0])
+      .toEqual({ actual_balance: 12345, user_id: null })
     expect((await client.query("SELECT last_executed_date::text, recorded_through_date::text FROM recurring_transactions WHERE id=$1", [legacyScheduleId])).rows[0])
       .toEqual({ last_executed_date: "2026-09-30", recorded_through_date: "2026-09-30" })
     expect((await client.query("SELECT amount::float8 AS amount, recurring_id, scheduled_date FROM transactions WHERE id=$1", [legacyTransactionId])).rows[0])
@@ -143,6 +149,43 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
         await client.query("ROLLBACK TO SAVEPOINT decimal_fixture")
       }
     })
+  })
+
+  it("stores fractional, zero and negative reconciliation balances without changing the ledger", async () => {
+    await asUser(userA, async () => {
+      await client.query("SAVEPOINT reconciliation_fixture")
+      try {
+        const connection = drizzle(client)
+        const accountId = (await client.query("INSERT INTO accounts(name,type,initial_balance) VALUES ('Reconciliation source','bank',1031000) RETURNING id")).rows[0].id
+        await connection.insert(transactions).values({ type: "income", amount: 225.23, category: "Gaji Utama", date: "2026-11-22", accountId })
+        const balanceBefore = await accountSummaryQuery(connection, [accountId])
+        const ledgerBefore = await readLedger(connection, [accountId])
+        for (const actualBalance of [594585.79, 0, -594585.79]) {
+          const [saved] = await connection.insert(reconciliations).values({ accountId, actualBalance, date: "2026-11-22" }).returning()
+          expect(saved.actualBalance).toBe(actualBalance)
+          expect(saved.userId).toBe(userA)
+        }
+        expect((await connection.select().from(reconciliations).where(eq(reconciliations.accountId, accountId)).orderBy(reconciliations.id)).map((row) => row.actualBalance))
+          .toEqual([594585.79, 0, -594585.79])
+        expect(balanceBefore[0].balance).toBe(1031225.23)
+        expect(await accountSummaryQuery(connection, [accountId])).toEqual(balanceBefore)
+        expect(await readLedger(connection, [accountId])).toEqual(ledgerBefore)
+        expect((await client.query("SELECT initial_balance FROM accounts WHERE id=$1", [accountId])).rows[0].initial_balance).toBe(1031000)
+      } finally {
+        await client.query("ROLLBACK TO SAVEPOINT reconciliation_fixture")
+      }
+    })
+  })
+
+  it("keeps decimal reconciliations private and rejects another user's account", async () => {
+    const saved = await asUser(userA, () => client.query("INSERT INTO reconciliations(account_id,actual_balance,date) VALUES ($1,594585.79,'2026-11-22') RETURNING id", [accountA.id]))
+    try {
+      expect((await asUser(userB, () => client.query("SELECT id FROM reconciliations WHERE id=$1", [saved.rows[0].id]))).rows).toEqual([])
+      await expect(asUser(userB, () => client.query("INSERT INTO reconciliations(account_id,actual_balance,date) VALUES ($1,594585.79,'2026-11-22')", [accountA.id])))
+        .rejects.toMatchObject({ code: "42501" })
+    } finally {
+      await asUser(userA, () => client.query("DELETE FROM reconciliations WHERE id=$1", [saved.rows[0].id]))
+    }
   })
 
   it("records early and late periods once, preserves other periods, and uses actual dates for cash flow", async () => {
