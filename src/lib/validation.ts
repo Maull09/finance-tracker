@@ -7,6 +7,7 @@ import {
   type TransactionType,
 } from "./finance"
 import { isValidSubcategory } from "./categories"
+import { parseTransactionAmount } from "./transaction-amount"
 
 type RecordBody = Record<string, unknown>
 
@@ -40,7 +41,7 @@ export function parseTransactionInput(value: unknown): TransactionInput | null {
   if (!isRecord(value)) return null
 
   const type = value.type
-  const amount = toPositiveInteger(value.amount)
+  const amount = parseTransactionAmount(value.amount)
   const category = toRequiredText(value.category)
   const subcategory = value.subcategory == null || value.subcategory === "" ? null : toRequiredText(value.subcategory)
   const groupName = parseTransactionGroupName(value.groupName)

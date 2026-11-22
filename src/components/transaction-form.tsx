@@ -30,6 +30,7 @@ import {
 } from "@/lib/finance"
 import { jsonBody, requestJson } from "@/lib/client-api"
 import type { Account, Transaction } from "@/lib/types"
+import { parseTransactionAmount } from "@/lib/transaction-amount"
 
 export function TransactionForm({
   accounts,
@@ -94,9 +95,9 @@ export function TransactionForm({
     setDestinationAccountId("")
   }
 
+  const parsedAmount = parseTransactionAmount(amount)
   const valid =
-    Number.isSafeInteger(Number(amount)) &&
-    Number(amount) > 0 &&
+    parsedAmount !== null &&
     category &&
     accountId &&
     date &&
@@ -119,7 +120,7 @@ export function TransactionForm({
       const onlyGroupChanged =
         transaction &&
         type === transaction.type &&
-        Number(amount) === transaction.amount &&
+        parsedAmount === transaction.amount &&
         category === transaction.category &&
         subcategory === transaction.subcategory &&
         Number(accountId) === transaction.accountId &&
@@ -137,7 +138,7 @@ export function TransactionForm({
             ? { groupName: selectedGroup }
             : {
                 type,
-                amount,
+                amount: parsedAmount,
                 category,
                 subcategory,
                 accountId,
@@ -214,24 +215,23 @@ export function TransactionForm({
             <Field
               id={id + "-amount"}
               label={t("amountIdr")}
-              hint={t("amountHint")}
+              hint={t("transactionAmountHint")}
               required
             >
               <Input
                 id={id + "-amount"}
                 aria-describedby={id + "-amount-hint"}
-                type="number"
-                min="1"
-                step="1"
-                inputMode="numeric"
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]+([.,][0-9]{1,2})?"
                 placeholder="0"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 required
               />
-              {Number(amount) > 0 && (
+              {parsedAmount !== null && (
                 <p className="text-sm font-medium text-brand-active">
-                  {formatCurrency(Number(amount))}
+                  {formatCurrency(parsedAmount)}
                 </p>
               )}
             </Field>

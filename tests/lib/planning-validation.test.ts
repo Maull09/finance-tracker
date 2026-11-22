@@ -81,6 +81,7 @@ describe("financial planning validation", () => {
     { endDate: "2026-10-02" },
     { endDate: "2026-02-30" },
     { frequency: "daily" },
+    { amount: 1.25 },
     { startDate: "2026-02-30" },
     { name: null },
     { accountId: true },

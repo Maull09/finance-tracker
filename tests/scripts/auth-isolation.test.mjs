@@ -23,6 +23,8 @@ import { getRedisClient } from "@/lib/server/redis"
 import { recurringSchedulesQuery } from "@/lib/server/recurring-queries"
 import { recordRecurringOccurrence } from "@/lib/server/recurring-recording"
 import { scheduleOccurrences } from "@/lib/planning"
+import { parseTransactionInput } from "@/lib/validation"
+import { readFinancialHealth } from "@/lib/server/financial-health-queries"
 
 const testUrl = process.env.AUTH_TEST_DATABASE_URL
 const redisTestUrl = process.env.REDIS_TEST_URL
@@ -97,11 +99,50 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
   it("applies migrations without losing legacy amounts or watchlist notes", async () => {
     expect((await client.query("SELECT initial_balance, user_id FROM accounts WHERE id = $1", [legacyId])).rows[0]).toEqual({ initial_balance: 12345, user_id: null })
     expect((await client.query("SELECT note FROM stock_watchlist")).rows[0].note).toBe("Legacy note")
-    expect(schemaIssues(loadSnapshot("0015"), await readDatabaseSchema(client))).toEqual([])
+    expect(schemaIssues(loadSnapshot("0016"), await readDatabaseSchema(client))).toEqual([])
     expect((await client.query("SELECT last_executed_date::text, recorded_through_date::text FROM recurring_transactions WHERE id=$1", [legacyScheduleId])).rows[0])
       .toEqual({ last_executed_date: "2026-09-30", recorded_through_date: "2026-09-30" })
-    expect((await client.query("SELECT amount, recurring_id, scheduled_date FROM transactions WHERE id=$1", [legacyTransactionId])).rows[0])
+    expect((await client.query("SELECT amount::float8 AS amount, recurring_id, scheduled_date FROM transactions WHERE id=$1", [legacyTransactionId])).rows[0])
       .toEqual({ amount: 5000, recurring_id: null, scheduled_date: null })
+  })
+
+  it("preserves decimal transaction amounts through edits, transfers, balances, budgets and reports", async () => {
+    await asUser(userA, async () => {
+      await client.query("SAVEPOINT decimal_fixture")
+      try {
+        const connection = drizzle(client)
+        const source = (await client.query("INSERT INTO accounts(name,type,initial_balance) VALUES ('Decimal source','bank',1000000) RETURNING id")).rows[0].id
+        const destination = (await client.query("INSERT INTO accounts(name,type) VALUES ('Decimal destination','cash') RETURNING id")).rows[0].id
+        const input = { type: "expense", amount: "243060,44", category: "Minuman", subcategory: "Kopi", date: "2026-10-23", accountId: source }
+        const [expense] = await connection.insert(transactions).values(parseTransactionInput(input)).returning()
+        expect(expense.amount).toBe(243060.44)
+        await connection.insert(transactions).values([
+          parseTransactionInput({ ...input, type: "income", amount: "0.10", category: "Gaji Utama", subcategory: null }),
+          parseTransactionInput({ ...input, type: "income", amount: "0,20", category: "Gaji Utama", subcategory: null }),
+          parseTransactionInput({ ...input, type: "transfer", amount: "100,55", subcategory: null, destinationAccountId: destination }),
+        ])
+        const balances = await accountSummaryQuery(connection, [source, destination])
+        expect(balances.map((account) => account.balance)).toEqual([756839.31, 100.55])
+        expect((await readLedger(connection, [source, destination])).cashBalance).toBe(756939.86)
+        const filters = parseTransactionFilters(new URLSearchParams({ account: String(source), from: "2026-10-01", to: "2026-10-31" }))
+        expect(await readTransactionPage(connection, transactionConditions(filters), 1, 25))
+          .toMatchObject({ summary: { income: 0.3, expense: 243060.44 } })
+        await client.query("INSERT INTO budgets(category,budget,period_start) VALUES ('Minuman',500000,'2026-10-01')")
+        expect((await readBudgets(connection, "2026-10-01", "2026-11-01", "2026-09-01")).find((row) => row.category === "Minuman").spent).toBe(243060.44)
+        const dashboard = await readDashboardLedger(connection, {
+          historyStart: "2026-10-01", historyEnd: "2026-11-01", previousStart: "2026-09-01",
+          periodEnd: "2026-11-01", recentStart: "2026-10-17", today: "2026-10-23",
+        })
+        expect(dashboard.cashBalance).toBe(756939.86)
+        const health = await readFinancialHealth(connection, { month: "2026-10", essentialExpense: null, monthlyDebtPayment: null })
+        expect(health.totalAssets).toBe(756939.86)
+        const [edited] = await connection.update(transactions).set(parseTransactionInput({ ...input, amount: "243060,45" })).where(eq(transactions.id, expense.id)).returning()
+        expect(edited.amount).toBe(243060.45)
+        expect((await accountSummaryQuery(connection, [source]))[0].balance).toBe(756839.3)
+      } finally {
+        await client.query("ROLLBACK TO SAVEPOINT decimal_fixture")
+      }
+    })
   })
 
   it("records early and late periods once, preserves other periods, and uses actual dates for cash flow", async () => {
@@ -130,7 +171,7 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
         await client.query("DELETE FROM transactions WHERE id=$1", [late.id])
         expect(scheduleOccurrences(await readSchedule(), "2026-01-01", "2026-04-30").map((item) => item.date)).toEqual(["2026-01-31"])
         await client.query("DELETE FROM recurring_transactions WHERE id=$1", [id])
-        expect((await client.query("SELECT amount,recurring_id FROM transactions WHERE id=$1", [early.id])).rows[0]).toEqual({ amount: 30000, recurring_id: null })
+        expect((await client.query("SELECT amount::float8 AS amount,recurring_id FROM transactions WHERE id=$1", [early.id])).rows[0]).toEqual({ amount: 30000, recurring_id: null })
       } finally {
         await client.query("ROLLBACK TO SAVEPOINT occurrence_fixture")
       }
@@ -184,7 +225,7 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
       const schedule = (await client.query("INSERT INTO recurring_transactions(user_id,name,type,amount,category,account_id,start_date) VALUES ($1,'Existing schedule','expense',23456,'Tagihan',$2,'2026-10-23') RETURNING id", [userA, accountA.id])).rows[0]
       for (const statement of readFileSync("drizzle/0014_brown_santa_claus.sql", "utf8").split("--> statement-breakpoint"))
         await client.query(statement)
-      expect((await client.query("SELECT amount,category,subcategory,group_name FROM transactions WHERE id=$1", [transaction.id])).rows[0])
+      expect((await client.query("SELECT amount::float8 AS amount,category,subcategory,group_name FROM transactions WHERE id=$1", [transaction.id])).rows[0])
         .toEqual({ amount: 12345, category: "Makanan", subcategory: null, group_name: "Existing group" })
       expect((await client.query("SELECT amount,category,subcategory FROM recurring_transactions WHERE id=$1", [schedule.id])).rows[0])
         .toEqual({ amount: 23456, category: "Tagihan", subcategory: null })

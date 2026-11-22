@@ -14,21 +14,22 @@ export function calculateAccountBalance(
   accountId: number,
   transactions: LedgerTransaction[],
 ) {
-  return transactions.reduce((balance, transaction) => {
+  return transactions.reduce((balanceCents, transaction) => {
+    const amountCents = Math.round(transaction.amount * 100)
     if (transaction.accountId === accountId && transaction.type === "income")
-      return balance + transaction.amount
+      return balanceCents + amountCents
     if (
       transaction.accountId === accountId &&
       (transaction.type === "expense" || transaction.type === "transfer")
     )
-      return balance - transaction.amount
+      return balanceCents - amountCents
     if (
       transaction.destinationAccountId === accountId &&
       transaction.type === "transfer"
     )
-      return balance + transaction.amount
-    return balance
-  }, initialBalance)
+      return balanceCents + amountCents
+    return balanceCents
+  }, Math.round(initialBalance * 100)) / 100
 }
 
 export function calculateBudgetCarryover(

@@ -175,7 +175,7 @@ export const transactions = pgTable(
     ),
     id: serial("id").primaryKey(),
     type: transactionTypeEnum("type").notNull(),
-    amount: integer("amount").notNull(),
+    amount: numeric("amount", { precision: 12, scale: 2, mode: "number" }).notNull(),
     category: text("category").notNull(),
     subcategory: text("subcategory"),
     groupName: text("group_name"),

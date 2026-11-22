@@ -21,7 +21,7 @@ export function accountSummaryQuery(connection: ReadConnection, accountIds?: num
   const outgoing = connection
     .select({
       accountId: transactions.accountId,
-      amount: sql<number>`sum(case when ${transactions.type} = 'income' then ${transactions.amount} else -${transactions.amount}::bigint end)`.as("outgoing_amount"),
+      amount: sql<number>`sum(case when ${transactions.type} = 'income' then ${transactions.amount} else -${transactions.amount} end)`.as("outgoing_amount"),
     })
     .from(transactions)
     .where(accountIds ? inArray(transactions.accountId, accountIds) : undefined)

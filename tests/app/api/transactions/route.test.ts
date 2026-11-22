@@ -32,6 +32,14 @@ describe("transaction category writes", () => {
     expect(state.accountsExist).not.toHaveBeenCalled()
     expect(state.insert).not.toHaveBeenCalled()
   })
+  it.each(["243060,44", "243060.44", 243060.44])("writes decimal amount %s without rounding", async (amount) => {
+    expect((await post({ ...expense, amount })).status).toBe(201)
+    expect(state.values).toHaveBeenCalledWith(expect.objectContaining({ amount: 243060.44 }))
+  })
+  it.each(["1.234", "1,234", "243.060,44"])("rejects unsupported precision or grouping before writing: %s", async (amount) => {
+    expect((await post({ ...expense, amount })).status).toBe(400)
+    expect(state.insert).not.toHaveBeenCalled()
+  })
   it("retains account ownership checks for categorized transactions", async () => {
     state.accountsExist.mockResolvedValue(false)
     expect((await post(expense)).status).toBe(400)

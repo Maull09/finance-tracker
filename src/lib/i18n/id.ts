@@ -1,6 +1,7 @@
 import type { en } from "./en"
 
 export const id: Record<keyof typeof en, string> = {
+  transactionAmountHint: "Gunakan maksimal 2 angka desimal, misalnya 243060,44 atau 243060.44. Tanpa pemisah ribuan.",
   "subcategory": "Subkategori",
   "subcategoryHint": "Opsional. Total tetap dikelompokkan dalam kategori utama.",
   "noSubcategory": "Tanpa subkategori",

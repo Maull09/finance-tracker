@@ -222,9 +222,9 @@ function totalFor(
 ) {
   return rows.reduce(
     (total, transaction) =>
-      transaction.type === type ? total + transaction.amount : total,
+      transaction.type === type ? total + Math.round(transaction.amount * 100) : total,
     0,
-  )
+  ) / 100
 }
 
 function totalByCategory(
@@ -238,7 +238,7 @@ function totalByCategory(
   return rows.reduce<Record<string, number>>((totals, transaction) => {
     if (transaction.type === type)
       totals[transaction.category] =
-        (totals[transaction.category] ?? 0) + transaction.amount
+        (Math.round((totals[transaction.category] ?? 0) * 100) + Math.round(transaction.amount * 100)) / 100
     return totals
   }, {})
 }
@@ -253,7 +253,7 @@ function totalByDate(
 ) {
   return rows.reduce<Record<string, number>>((totals, transaction) => {
     if (transaction.type === type)
-      totals[transaction.date] = (totals[transaction.date] ?? 0) + transaction.amount
+      totals[transaction.date] = (Math.round((totals[transaction.date] ?? 0) * 100) + Math.round(transaction.amount * 100)) / 100
     return totals
   }, {})
 }

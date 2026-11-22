@@ -1,4 +1,5 @@
 export const en = {
+  transactionAmountHint: "Use up to 2 decimal places, for example 243060.44 or 243060,44. Do not use thousands separators.",
   "subcategory": "Subcategory",
   "subcategoryHint": "Optional. Totals stay grouped under the main category.",
   "noSubcategory": "No subcategory",

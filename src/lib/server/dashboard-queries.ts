@@ -14,7 +14,7 @@ export async function readDashboardLedger(
   connection: Pick<UserDatabase, "execute">,
   range: { historyStart: string; historyEnd: string; previousStart: string; periodEnd: string; recentStart: string; today: string },
 ) {
-  const netAmount = sql`case when type = 'income' then amount::bigint when type = 'expense' then -amount::bigint else 0 end`
+  const netAmount = sql`case when type = 'income' then amount when type = 'expense' then -amount else 0 end`
   const result = await connection.execute<{ ledger: DashboardLedger }>(sql`
     with daily as (
       select date, type, category, sum(amount) as amount, min(id) as first_id

@@ -113,6 +113,13 @@
       "when": 1792768966626,
       "tag": "0015_needy_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795354559049,
+      "tag": "0016_transaction_decimal_amounts",
+      "breakpoints": true
     }
   ]
 }
