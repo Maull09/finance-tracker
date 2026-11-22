@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs"
 import pg from "pg"
 import { drizzle } from "drizzle-orm/node-postgres"
 import { and, eq, isNotNull, isNull } from "drizzle-orm"
-import { aiDrafts, transactions, recurringTransactions, reconciliations } from "@/db/schema"
+import { accounts, aiDrafts, budgets, debtPayments, debts, goalContributions, goals, transactions, recurringTransactions, reconciliations, sinkingFundEntries, sinkingFunds, stockTrades } from "@/db/schema"
 import { decideDraft } from "@/lib/ai/confirmation"
 import { readLedger, readReservations } from "@/lib/server/ledger"
 import { readBalanceLedger, readReservedCash, accountSummaryQuery, goalSummaryQuery, debtSummaryQuery } from "@/lib/server/financial-queries"
@@ -39,6 +39,8 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
   let legacyScheduleId
   let legacyTransactionId
   let legacyReconciliationId
+  const moneyMigrationRows = []
+  const moneyMigrationPreserved = []
   let redisCacheUsed = false
 
   async function asUser(id, action) {
@@ -79,11 +81,30 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
       if (migration.idx === 17) {
         legacyReconciliationId = (await client.query("INSERT INTO reconciliations(account_id,actual_balance,date) VALUES ($1,12345,'2026-10-23') RETURNING id", [legacyId])).rows[0].id
       }
+      if (migration.idx === 18) {
+        const add = async (table, field, value, query, values) => {
+          const id = (await client.query(query, values)).rows[0].id
+          moneyMigrationRows.push({ table, field, value, id })
+          return id
+        }
+        await add("budgets", "budget", "321", "INSERT INTO budgets(category,budget,spent,period_start) VALUES ('Legacy money',321,123,'2026-10-01') RETURNING id")
+        const debt = await add("debts", "amount", "321", "INSERT INTO debts(type,name,amount) VALUES ('utang','Legacy money',321) RETURNING id")
+        const goal = await add("goals", "target_amount", "321", "INSERT INTO goals(title,target_amount,current_amount,target_date) VALUES ('Legacy money',321,123,'2027-01-01') RETURNING id")
+        await add("goal_contributions", "amount", "123", "INSERT INTO goal_contributions(goal_id,account_id,amount,date) VALUES ($1,$2,123,'2026-10-01') RETURNING id", [goal, legacyId])
+        await add("debt_payments", "amount", "123", "INSERT INTO debt_payments(debt_id,account_id,amount,date,transaction_id) VALUES ($1,$2,123,'2026-10-01',$3) RETURNING id", [debt, legacyId, legacyTransactionId])
+        const fund = await add("sinking_funds", "target_amount", "9223372036854775807", "INSERT INTO sinking_funds(name,account_id,target_amount,target_date) VALUES ('Legacy money',$1,9223372036854775807,'2027-01-01') RETURNING id", [legacyId])
+        await add("sinking_fund_entries", "amount", "9223372036854775807", "INSERT INTO sinking_fund_entries(fund_id,kind,amount,date) VALUES ($1,'allocate',9223372036854775807,'2026-10-01') RETURNING id", [fund])
+        await add("stock_trades", "fees", "9223372036854775807", "INSERT INTO stock_trades(symbol,account_id,side,shares,price,fees,date) VALUES ('BBRI',$1,'buy',1,1,9223372036854775807,'2026-10-01') RETURNING id", [legacyId])
+      }
       await client.query("BEGIN")
       for (const statement of readFileSync(`drizzle/${migration.tag}.sql`, "utf8").split("--> statement-breakpoint"))
         await client.query(statement)
       await client.query("COMMIT")
     }
+    for (const row of moneyMigrationRows) {
+      moneyMigrationPreserved.push((await client.query(`SELECT ${row.field} = $2::numeric AS preserved FROM ${row.table} WHERE id=$1`, [row.id, row.value])).rows[0].preserved)
+    }
+    for (const row of [...moneyMigrationRows].reverse()) await client.query(`DELETE FROM ${row.table} WHERE id=$1`, [row.id])
     await client.query("CREATE SCHEMA auth; CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, email_confirmed_at timestamptz)")
     await client.query("INSERT INTO auth.users VALUES ($1, 'owner@example.test', now()), ($2, 'other@example.test', now())", [userA, userB])
     accountA = (await asUser(userA, () => client.query("INSERT INTO accounts (name, type) VALUES ('A', 'bank') RETURNING id, user_id"))).rows[0]
@@ -101,9 +122,10 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
   })
 
   it("applies migrations without losing legacy amounts or watchlist notes", async () => {
-    expect((await client.query("SELECT initial_balance, user_id FROM accounts WHERE id = $1", [legacyId])).rows[0]).toEqual({ initial_balance: 12345, user_id: null })
+    expect((await client.query("SELECT initial_balance::float8 AS initial_balance, user_id FROM accounts WHERE id = $1", [legacyId])).rows[0]).toEqual({ initial_balance: 12345, user_id: null })
     expect((await client.query("SELECT note FROM stock_watchlist")).rows[0].note).toBe("Legacy note")
-    expect(schemaIssues(loadSnapshot("0017"), await readDatabaseSchema(client))).toEqual([])
+    expect(schemaIssues(loadSnapshot("0018"), await readDatabaseSchema(client))).toEqual([])
+    expect(moneyMigrationPreserved).toEqual(Array(8).fill(true))
     expect((await client.query("SELECT actual_balance::float8 AS actual_balance, user_id FROM reconciliations WHERE id=$1", [legacyReconciliationId])).rows[0])
       .toEqual({ actual_balance: 12345, user_id: null })
     expect((await client.query("SELECT last_executed_date::text, recorded_through_date::text FROM recurring_transactions WHERE id=$1", [legacyScheduleId])).rows[0])
@@ -170,7 +192,7 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
         expect(balanceBefore[0].balance).toBe(1031225.23)
         expect(await accountSummaryQuery(connection, [accountId])).toEqual(balanceBefore)
         expect(await readLedger(connection, [accountId])).toEqual(ledgerBefore)
-        expect((await client.query("SELECT initial_balance FROM accounts WHERE id=$1", [accountId])).rows[0].initial_balance).toBe(1031000)
+        expect((await client.query("SELECT initial_balance::float8 AS initial_balance FROM accounts WHERE id=$1", [accountId])).rows[0].initial_balance).toBe(1031000)
       } finally {
         await client.query("ROLLBACK TO SAVEPOINT reconciliation_fixture")
       }
@@ -186,6 +208,55 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
     } finally {
       await asUser(userA, () => client.query("DELETE FROM reconciliations WHERE id=$1", [saved.rows[0].id]))
     }
+  })
+
+  it("preserves decimals in opening balances, budgets, debts, goals, funds, schedules and stock fees", async () => {
+    await asUser(userA, async () => {
+      await client.query("SAVEPOINT decimal_money_fixture")
+      try {
+        const connection = drizzle(client)
+        const [source] = await connection.insert(accounts).values({ name: "Decimal money", type: "bank", initialBalance: 1000.1 }).returning()
+        expect(source.initialBalance).toBe(1000.1)
+        const [budget] = await connection.insert(budgets).values({ category: "Makanan", budget: 0.55, spent: 0.1, periodStart: "2026-11-01" }).returning()
+        expect(budget).toMatchObject({ budget: 0.55, spent: 0.1 })
+        const [debt] = await connection.insert(debts).values({ type: "utang", name: "Decimal debt", amount: 0.3 }).returning()
+        expect(debt.amount).toBe(0.3)
+        for (const amount of [0.1, 0.2]) {
+          const [transaction] = await connection.insert(transactions).values({ type: "expense", amount, category: "Utang", accountId: source.id, date: "2026-11-23" }).returning()
+          const [payment] = await connection.insert(debtPayments).values({ debtId: debt.id, accountId: source.id, amount, date: "2026-11-23", transactionId: transaction.id }).returning()
+          expect(payment.amount).toBe(amount)
+        }
+        expect((await debtSummaryQuery(connection)).find((row) => row.id === debt.id)).toMatchObject({ paidAmount: 0.3, remaining: 0 })
+        const [goal] = await connection.insert(goals).values({ title: "Decimal goal", targetAmount: 0.3, currentAmount: 0.1, targetDate: "2027-01-01" }).returning()
+        const [contribution] = await connection.insert(goalContributions).values({ goalId: goal.id, accountId: source.id, amount: 0.2, date: "2026-11-23" }).returning()
+        expect(contribution.amount).toBe(0.2)
+        expect((await goalSummaryQuery(connection)).find((row) => row.id === goal.id)).toMatchObject({ currentAmount: 0.3, targetAmount: 0.3 })
+        const [fund] = await connection.insert(sinkingFunds).values({ name: "Decimal fund", accountId: source.id, targetAmount: 0.3, targetDate: "2027-01-01" }).returning()
+        for (const amount of [0.1, 0.2]) {
+          const [entry] = await connection.insert(sinkingFundEntries).values({ fundId: fund.id, kind: "allocate", amount, date: "2026-11-23" }).returning()
+          expect(entry.amount).toBe(amount)
+        }
+        const [expense] = await connection.insert(transactions).values({ type: "expense", amount: 0.3, category: "Makanan", accountId: source.id, date: "2026-11-23" }).returning()
+        await connection.insert(sinkingFundEntries).values({ fundId: fund.id, kind: "spend", amount: 0.3, date: "2026-11-23", transactionId: expense.id })
+        expect((await readReservedCash(connection, [source.id])).reserved.get(source.id)).toBe(0.2)
+        expect((await readReservations(connection, [source.id])).reserved.get(source.id)).toBe(0.2)
+        const [schedule] = await connection.insert(recurringTransactions).values({ name: "Decimal schedule", type: "expense", amount: 0.1, category: "Makanan", accountId: source.id, frequency: "monthly", startDate: "2026-11-23" }).returning()
+        const recording = await recordRecurringOccurrence(connection, schedule.id, { scheduledDate: "2026-11-23", date: "2026-11-23", amount: 0.2 })
+        expect(recording.amount).toBe(0.2)
+        expect((await recurringSchedulesQuery(connection).where(eq(recurringTransactions.id, schedule.id)))[0].amount).toBe(0.1)
+        expect((await accountSummaryQuery(connection, [source.id]))[0].balance).toBe(999.3)
+        expect((await readLedger(connection, [source.id])).cashBalance).toBe(999.3)
+        expect((await readBudgets(connection, "2026-11-01", "2026-12-01", "2026-10-01")).find((row) => row.id === budget.id).spent).toBe(0.5)
+        const [broker] = await connection.insert(accounts).values({ name: "Decimal brokerage", type: "investment", initialBalance: 1000.01 }).returning()
+        const [trade] = await connection.insert(stockTrades).values({ accountId: broker.id, symbol: "BBCA", side: "buy", shares: 100, price: 1.0001, fees: 0.01, date: "2026-11-23" }).returning()
+        expect(trade.fees).toBe(0.01)
+        expect(tradeCashChange(trade)).toBe(-100.02)
+        expect((await accountSummaryQuery(connection, [broker.id]))[0].balance).toBe(899.99)
+        expect((await readLedger(connection, [broker.id])).cashBalance).toBe(899.99)
+      } finally {
+        await client.query("ROLLBACK TO SAVEPOINT decimal_money_fixture")
+      }
+    })
   })
 
   it("records early and late periods once, preserves other periods, and uses actual dates for cash flow", async () => {
@@ -270,7 +341,7 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
         await client.query(statement)
       expect((await client.query("SELECT amount::float8 AS amount,category,subcategory,group_name FROM transactions WHERE id=$1", [transaction.id])).rows[0])
         .toEqual({ amount: 12345, category: "Makanan", subcategory: null, group_name: "Existing group" })
-      expect((await client.query("SELECT amount,category,subcategory FROM recurring_transactions WHERE id=$1", [schedule.id])).rows[0])
+      expect((await client.query("SELECT amount::float8 AS amount,category,subcategory FROM recurring_transactions WHERE id=$1", [schedule.id])).rows[0])
         .toEqual({ amount: 23456, category: "Tagihan", subcategory: null })
     } finally {
       await client.query("ROLLBACK")
@@ -561,7 +632,7 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
     expect((await client.query("SELECT user_id FROM accounts WHERE id=$1", [legacyId])).rows[0].user_id).toBeNull()
     const applied = await assignLegacyOwner(client, "owner@example.test", true)
     expect(applied).toEqual(preview)
-    expect((await client.query("SELECT user_id, initial_balance FROM accounts WHERE id=$1", [legacyId])).rows[0]).toEqual({ user_id: userA, initial_balance: 12345 })
+    expect((await client.query("SELECT user_id, initial_balance::float8 AS initial_balance FROM accounts WHERE id=$1", [legacyId])).rows[0]).toEqual({ user_id: userA, initial_balance: 12345 })
     expect((await assignLegacyOwner(client, "owner@example.test", true)).accounts).toBe(0)
     expect((await client.query("SELECT user_id FROM accounts WHERE id=$1", [accountB.id])).rows[0].user_id).toBe(userB)
   })

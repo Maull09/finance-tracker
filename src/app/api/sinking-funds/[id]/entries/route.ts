@@ -1,3 +1,4 @@
+import { sumMoney } from "@/lib/money"
 import { eq, sql } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 import {
@@ -8,7 +9,7 @@ import {
 } from "@/db/schema"
 import { authenticatedResponse } from "@/lib/server/authenticated-response"
 import { FinanceError } from "@/lib/finance-errors"
-import { integerInput, recordInput, textInput } from "@/lib/planning-validation"
+import { integerInput, moneyInput, recordInput, textInput } from "@/lib/planning-validation"
 import { expenseCategories, getToday } from "@/lib/finance"
 import { isValidSubcategory } from "@/lib/categories"
 import { accountSummaryQuery, readReservedCash } from "@/lib/server/financial-queries"
@@ -20,7 +21,7 @@ export async function POST(
   return authenticatedResponse(async (db) => {
     const fundId = integerInput((await params).id, 1, 2_147_483_647)
     const body = recordInput(await request.json())
-    const amount = integerInput(body.amount, 1, 2_147_483_647)
+    const amount = moneyInput(body.amount)
     const kind = body.kind
     if (!["allocate", "release", "spend"].includes(String(kind)))
       throw new FinanceError("invalidInput")
@@ -58,10 +59,10 @@ export async function POST(
       const allocated = allocations[0].amount
       const cash = summaries[0].balance
       const availableCash =
-        cash - (reservations.reserved.get(fund.accountId) ?? 0)
+        sumMoney([cash, -(reservations.reserved.get(fund.accountId) ?? 0)])
       if (kind === "allocate" && amount > availableCash)
         throw new FinanceError("insufficientAvailableCash", 409)
-      if (kind === "allocate" && allocated + amount > fund.targetAmount)
+      if (kind === "allocate" && sumMoney([allocated, amount]) > fund.targetAmount)
         throw new FinanceError("fundTargetExceeded", 409)
       if (kind !== "allocate" && amount > allocated)
         throw new FinanceError("fundBalanceExceeded", 409)

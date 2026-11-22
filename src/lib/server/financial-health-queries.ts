@@ -1,4 +1,5 @@
 import { and, lte, sql } from "drizzle-orm"
+import { sumMoney } from "@/lib/money"
 import { recurringTransactions, stockPrices, stockTrades } from "@/db/schema"
 import { calculateFinancialHealth, healthPeriod, type HealthInput, type HealthMonth } from "@/lib/financial-health"
 import { calculateHoldings, investmentTotals } from "@/lib/investments"
@@ -94,7 +95,7 @@ export async function readFinancialHealth(connection: UserDatabase, input: Healt
     throw new FinanceError("invalidInput")
   const recurringExpense = schedules.filter((row) => row.type === "expense")
     .flatMap((schedule) => scheduleOccurrences({ ...schedule, recordedThroughDate: null }, period.start, period.asOf))
-    .reduce((sum, row) => sum + row.amount, 0)
+    .reduce((sum, row) => sumMoney([sum, row.amount]), 0)
   const priceDates = holdings.filter((holding) => holding.shares > 0 && holding.priceDate !== null)
     .map((holding) => holding.priceDate!).sort()
   return calculateFinancialHealth({
@@ -103,8 +104,8 @@ export async function readFinancialHealth(connection: UserDatabase, input: Healt
     partial: input.month === getCurrentMonth(),
     months: ledger.months,
     liquidAssets: ledger.liquidAssets,
-    totalAssets: investments.unpricedCount ? null : ledger.cashAssets + investments.knownMarketValue + ledger.receivables,
-    totalLiabilities: ledger.liabilities + ledger.overdrafts,
+    totalAssets: investments.unpricedCount ? null : sumMoney([ledger.cashAssets, investments.knownMarketValue, ledger.receivables]),
+    totalLiabilities: sumMoney([ledger.liabilities, ledger.overdrafts]),
     recordedDebtPayments: ledger.recordedDebtPayments,
     recurringExpense,
     unpricedHoldings: investments.unpricedCount,

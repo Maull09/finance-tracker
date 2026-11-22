@@ -50,7 +50,7 @@ describe("recording scheduled occurrences", () => {
     expect(state.values).toHaveBeenCalledWith(expect.objectContaining({ amount }))
     expect(state.set).toHaveBeenCalledWith({ lastExecutedDate: expect.anything() })
   })
-  it.each([undefined, null, "", "abc", "1e3", true, 0, -1, 1.5, 2147483648])("rejects invalid actual amount %s before reading financial data", async (amount) => {
+  it.each([undefined, null, "", "abc", "1e3", true, 0, -1, 1.555, 2147483648])("rejects invalid actual amount %s before reading financial data", async (amount) => {
     expect((await record({ scheduledDate: "2026-09-30", date: "2026-10-23", amount })).status).toBe(400)
     expect(state.select).not.toHaveBeenCalled()
     expect(state.insert).not.toHaveBeenCalled()

@@ -25,7 +25,7 @@ export async function recordStockTrade(db: UserDatabase, body: unknown) {
     if (
       input.side === "buy" &&
       Math.round(cash * 100) + Math.round(tradeCashChange(input) * 100) <
-        (reservations.reserved.get(input.accountId) ?? 0) * 100
+        Math.round((reservations.reserved.get(input.accountId) ?? 0) * 100)
     )
       throw new FinanceError("insufficientAvailableCash", 409)
     await connection

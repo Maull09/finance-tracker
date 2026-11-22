@@ -1,3 +1,4 @@
+import { sumMoney } from "@/lib/money"
 import type { UserDatabase } from "@/lib/server/authenticated-response"
 import { eq, getTableColumns, inArray, or, sql } from "drizzle-orm"
 import {
@@ -80,19 +81,18 @@ export async function readReservations(
   for (const entry of entries)
     allocatedByFund.set(
       entry.fundId,
-      (allocatedByFund.get(entry.fundId) ?? 0) + fundBalance([entry]),
+      sumMoney([allocatedByFund.get(entry.fundId) ?? 0, fundBalance([entry])]),
     )
   const reserved = new Map<number, number>()
   for (const fund of funds)
     reserved.set(
       fund.accountId,
-      (reserved.get(fund.accountId) ?? 0) +
-        (allocatedByFund.get(fund.id) ?? 0),
+      sumMoney([reserved.get(fund.accountId) ?? 0, allocatedByFund.get(fund.id) ?? 0]),
     )
   for (const contribution of contributions)
     reserved.set(
       contribution.accountId,
-      (reserved.get(contribution.accountId) ?? 0) + contribution.amount,
+      sumMoney([reserved.get(contribution.accountId) ?? 0, contribution.amount]),
     )
   return { funds, entries, contributions, reserved }
 }

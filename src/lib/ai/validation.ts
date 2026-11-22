@@ -1,8 +1,9 @@
 import { z } from "zod"
 import { isDate } from "@/lib/finance"
 import { expenseCategories, isValidSubcategory } from "@/lib/categories"
+import { positiveMoneySchema } from "@/lib/money-schema"
 
-const amount = z.number().int().positive().max(2_147_483_647)
+const amount = positiveMoneySchema
 const accountId = z.number().int().positive().max(2_147_483_647)
 const date = z.string().refine(isDate, "invalidInput")
 

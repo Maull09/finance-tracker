@@ -73,7 +73,7 @@ describe("deterministic financial health", () => {
     expect(healthPeriod("2026-10").asOf).toBe("2026-10-01")
     expect(healthPeriod("2024-02").asOf).toBe("2024-02-29")
     for (const invalid of [{ month: "2026-13" }, { month: "2026-11" }, { month: "0000-01" },
-      { essentialExpense: -1 }, { monthlyDebtPayment: 0.5 }, { essentialExpense: Infinity }, { unexpected: true }])
+      { essentialExpense: -1 }, { monthlyDebtPayment: 0.555 }, { essentialExpense: Infinity }, { unexpected: true }])
       expect(healthInputSchema.safeParse({ ...input, ...invalid }).success).toBe(false)
   })
 })

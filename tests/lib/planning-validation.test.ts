@@ -72,7 +72,7 @@ describe("financial planning validation", () => {
     { type: "expense" },
     { name: {} },
     { dueDate: "2026-02-30" },
-    { amount: 1.5 },
+    { amount: 1.555 },
     { amount: 2147483648 },
   ])("rejects invalid debt metadata: %s", (override) => {
     expect(() => parseDebt({ ...debt, ...override })).toThrow("invalidInput")
@@ -81,7 +81,7 @@ describe("financial planning validation", () => {
     { endDate: "2026-10-02" },
     { endDate: "2026-02-30" },
     { frequency: "daily" },
-    { amount: 1.25 },
+    { amount: 1.255 },
     { startDate: "2026-02-30" },
     { name: null },
     { accountId: true },

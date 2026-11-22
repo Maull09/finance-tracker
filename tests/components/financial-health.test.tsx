@@ -27,7 +27,7 @@ describe("financial health interface", () => {
     expect(markup).toContain("Incomplete data")
     expect(markup).toContain('for="health-essential"')
     expect(markup).toContain('for="health-debt"')
-    expect(markup).toContain('aria-describedby="health-essential-hint"')
+    expect(markup).toContain('aria-describedby="health-essential-hint health-essential-money-hint"')
     expect(markup).toContain("AI insights")
     expect(markup).toContain("Your analysis is waiting")
     expect(markup).toContain("Reanalyse")

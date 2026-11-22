@@ -1,5 +1,8 @@
 "use client"
 
+import { MoneyInput } from "./money-input"
+import { parseTransactionAmount } from "@/lib/transaction-amount"
+
 import { PageInsights } from "./page-insights"
 import { useEffect, useRef, useState } from "react"
 import { Calculator, Loader2, Plus, Trash2 } from "lucide-react"
@@ -110,13 +113,10 @@ function PlannedCashflowList({
             />
           </Field>
           <Field id={`${kind}-amount-${index}`} label={labels.amount} required>
-            <Input
+            <MoneyInput
               id={`${kind}-amount-${index}`}
-              type="number"
-              min="1"
+              min="0.01"
               max="2147483647"
-              step="1"
-              inputMode="numeric"
               value={entry.amount}
               onChange={(event) =>
                 onUpdate(index, { amount: event.target.value })
@@ -232,8 +232,7 @@ export function FinancialSimulation() {
   const invalidCashflow = additionalCashflows.some(
     (cashflow) =>
       !cashflow.name.trim() ||
-      Number(cashflow.amount) <= 0 ||
-      !Number.isInteger(Number(cashflow.amount)) ||
+      parseTransactionAmount(cashflow.amount) === null ||
       !cashflow.date ||
       cashflow.date < today ||
       cashflow.date > endDate,
@@ -275,8 +274,8 @@ export function FinancialSimulation() {
       />
       <PageInsights context={{ page: "simulation", input: {
         endDate,
-        extraIncomes: incomes.map((item) => ({ amount: Number(item.amount), date: item.date })),
-        extraExpenses: expenses.map((item) => ({ amount: Number(item.amount), date: item.date })),
+        extraIncomes: incomes.map((item) => ({ amount: Number(item.amount.replace(",", ".")), date: item.date })),
+        extraExpenses: expenses.map((item) => ({ amount: Number(item.amount.replace(",", ".")), date: item.date })),
       } }} ready={Boolean(balance.data) && !balance.loading && !balance.refreshing && !balance.error && !invalidCashflow && Boolean(endDate) && endDate >= today} />
       <div className="grid gap-4 lg:grid-cols-3">
         <section

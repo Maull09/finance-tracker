@@ -1,3 +1,4 @@
+import { sumMoney } from "@/lib/money"
 import { stockTrades } from "@/db/schema"
 import { calculateHoldings, investmentTotals } from "@/lib/investments"
 import type { SimulationBalanceData } from "@/lib/planning-types"
@@ -14,11 +15,11 @@ export async function readSimulationBalance(connection: ReadConnection): Promise
   const prices = await readLatestPrices(connection, trades.map((trade) => trade.symbol))
   const investments = investmentTotals(calculateHoldings(trades, prices))
   const liabilities = debts.filter((debt) => debt.type === "utang")
-    .reduce((total, debt) => total + debt.remaining, 0)
+    .reduce((total, debt) => sumMoney([total, debt.remaining]), 0)
   const receivables = debts.filter((debt) => debt.type === "piutang")
-    .reduce((total, debt) => total + debt.remaining, 0)
-  const grossWorth = ledger.cashBalance + investments.costBasis + receivables
-  const knownNetWorth = ledger.cashBalance + investments.knownMarketValue + receivables - liabilities
+    .reduce((total, debt) => sumMoney([total, debt.remaining]), 0)
+  const grossWorth = sumMoney([ledger.cashBalance, investments.costBasis, receivables])
+  const knownNetWorth = sumMoney([ledger.cashBalance, investments.knownMarketValue, receivables, -liabilities])
   return {
     currentBalance: ledger.cashBalance,
     grossWorth,

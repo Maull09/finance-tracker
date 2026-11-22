@@ -1,5 +1,7 @@
 "use client"
 
+import { MoneyInput } from "./money-input"
+
 import { PageInsights } from "./page-insights"
 import { useCallback, useEffect, useRef, useState, useId } from "react"
 import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react"
@@ -695,7 +697,7 @@ function StockTradeForm({
           {t(trade ? "edit" : "recordTrade")}
         </Button>
       </DialogTrigger>
-      <DialogContent showCloseButton={!busy}>
+      <DialogContent showCloseButton={!busy} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t(trade ? "editTrade" : "recordTrade")}</DialogTitle>
           <DialogDescription>
@@ -799,12 +801,10 @@ function StockTradeForm({
               />
             </Field>
             <Field id={id + "-fees"} label={t("tradingFees")}>
-              <Input
+              <MoneyInput
                 id={id + "-fees"}
-                type="number"
                 min="0"
                 max="2147483647"
-                step="1"
                 value={fees}
                 onChange={(event) => setFees(event.target.value)}
                 required

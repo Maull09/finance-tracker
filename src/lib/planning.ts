@@ -1,3 +1,4 @@
+import { sumMoney } from "@/lib/money"
 import { getNextMonthStart } from "./finance"
 import type { PlannedCashflow, SimulationBalanceData } from "./planning-types"
 
@@ -111,18 +112,18 @@ export function simulateCashflow(
     const occurrences = scheduled.filter((item) => item.date.startsWith(month))
     const income = occurrences
       .filter((item) => item.type === "income")
-      .reduce((total, item) => total + item.amount, 0)
+      .reduce((total, item) => sumMoney([total, item.amount]), 0)
     const expense = occurrences
       .filter((item) => item.type === "expense")
-      .reduce((total, item) => total + item.amount, 0)
+      .reduce((total, item) => sumMoney([total, item.amount]), 0)
     const extraIncome = extraIncomes
       .filter((item) => item.date.startsWith(month))
-      .reduce((total, item) => total + item.amount, 0)
+      .reduce((total, item) => sumMoney([total, item.amount]), 0)
     const extraExpense = extraExpenses
       .filter((item) => item.date.startsWith(month))
-      .reduce((total, item) => total + item.amount, 0)
-    baseline += income - expense
-    scenario += income + extraIncome - expense - extraExpense
+      .reduce((total, item) => sumMoney([total, item.amount]), 0)
+    baseline = sumMoney([baseline, income, -expense])
+    scenario = sumMoney([scenario, income, extraIncome, -expense, -extraExpense])
     rows.push({
       month,
       income,
@@ -131,7 +132,7 @@ export function simulateCashflow(
       extraExpense,
       baseline,
       scenario,
-      difference: scenario - baseline,
+      difference: sumMoney([scenario, -baseline]),
     })
     month = getNextMonthStart(month).slice(0, 7)
   }
@@ -139,16 +140,16 @@ export function simulateCashflow(
     currentBalance,
     baseline,
     scenario,
-    difference: scenario - baseline,
+    difference: sumMoney([scenario, -baseline]),
     scheduledIncome: scheduled
       .filter((item) => item.type === "income")
-      .reduce((total, item) => total + item.amount, 0),
+      .reduce((total, item) => sumMoney([total, item.amount]), 0),
     scheduledExpense: scheduled
       .filter((item) => item.type === "expense")
-      .reduce((total, item) => total + item.amount, 0),
-    extraIncome: extraIncomes.reduce((total, item) => total + item.amount, 0),
+      .reduce((total, item) => sumMoney([total, item.amount]), 0),
+    extraIncome: extraIncomes.reduce((total, item) => sumMoney([total, item.amount]), 0),
     extraIncomeCount: extraIncomes.length,
-    extraExpense: extraExpenses.reduce((total, item) => total + item.amount, 0),
+    extraExpense: extraExpenses.reduce((total, item) => sumMoney([total, item.amount]), 0),
     extraExpenseCount: extraExpenses.length,
     rows,
   }
@@ -159,8 +160,8 @@ export function projectNetWorth(
   balance: SimulationBalanceData,
 ) {
   function atCash(projectedCash: number) {
-    const knownNetWorth = balance.knownNetWorth + projectedCash - balance.currentBalance
-    const grossWorth = balance.grossWorth + projectedCash - balance.currentBalance
+    const knownNetWorth = sumMoney([balance.knownNetWorth, projectedCash, -balance.currentBalance])
+    const grossWorth = sumMoney([balance.grossWorth, projectedCash, -balance.currentBalance])
     return {
       knownNetWorth,
       netWorth: balance.netWorth === null ? null : knownNetWorth,
@@ -181,7 +182,7 @@ export function projectNetWorth(
 export function fundBalance(entries: Array<{ kind: string; amount: number }>) {
   return entries.reduce(
     (total, entry) =>
-      total + (entry.kind === "allocate" ? entry.amount : -entry.amount),
+      sumMoney([total, entry.kind === "allocate" ? entry.amount : -entry.amount]),
     0,
   )
 }
@@ -197,5 +198,5 @@ export function monthlyFundSaving(
     Number(targetDate.slice(5, 7)) -
     Number(today.slice(5, 7)) +
     1
-  return Math.ceil(Math.max(0, target - allocated) / Math.max(1, months))
+  return Math.ceil(Math.max(0, Math.round(target * 100) - Math.round(allocated * 100)) / Math.max(1, months)) / 100
 }

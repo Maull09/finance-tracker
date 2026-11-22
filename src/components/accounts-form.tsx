@@ -1,5 +1,7 @@
 "use client"
 
+import { MoneyInput } from "./money-input"
+
 import { useId, useState } from "react"
 import { Pencil, Plus } from "lucide-react"
 import { useLanguage } from "./language-provider"
@@ -105,7 +107,7 @@ export function AddAccountForm({
           {t(account ? "edit" : "addAccount")}
         </Button>
       </DialogTrigger>
-      <DialogContent showCloseButton={!loading}>
+      <DialogContent showCloseButton={!loading} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t(account ? "editAccount" : "addAccount")}</DialogTitle>
           <DialogDescription>
@@ -150,12 +152,10 @@ export function AddAccountForm({
                   : "openingBalanceHint",
               )}
             >
-              <Input
+              <MoneyInput
                 id={id + "-balance"}
+                min="-2147483648"
                 aria-describedby={id + "-balance-hint"}
-                type="number"
-                step="1"
-                inputMode="numeric"
                 placeholder="0"
                 value={initialBalance}
                 onChange={(event) => setInitialBalance(event.target.value)}

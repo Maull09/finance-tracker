@@ -2,12 +2,13 @@ import { z } from "zod"
 import { getToday, isDate, isMonth } from "@/lib/finance"
 import { healthInputSchema } from "@/lib/financial-health"
 import { parseTransactionFilters } from "@/lib/transaction-filters"
+import { positiveMoneySchema } from "@/lib/money-schema"
 
 export const insightPages = ["dashboard", "transactions", "investments", "budget", "goals", "debts",
   "reports", "financialHealth", "planning", "netWorth", "calendar", "simulation", "funds"] as const
 export type InsightPage = typeof insightPages[number]
 const month = z.string().refine((value) => isMonth(value) && value >= "1900-01" && value <= "2100-12")
-const cashflow = z.object({ amount: z.number().int().positive().max(2_147_483_647), date: z.string().refine(isDate) }).strict()
+const cashflow = z.object({ amount: positiveMoneySchema, date: z.string().refine(isDate) }).strict()
 const simulation = z.object({
   endDate: z.string().refine((date) => isDate(date) && date >= getToday() && Date.parse(date) - Date.parse(getToday()) <= 730 * 86400000),
   extraIncomes: z.array(cashflow).max(20), extraExpenses: z.array(cashflow).max(20),

@@ -1,3 +1,4 @@
+import { sumMoney } from "@/lib/money"
 import { and, asc, eq, getTableColumns, gte, lt, sql } from "drizzle-orm"
 import { budgets, transactions } from "@/db/schema"
 import { calculateBudgetCarryover } from "@/lib/calculations"
@@ -50,6 +51,6 @@ export async function readBudgets(
     const carryover = calculateBudgetCarryover(
       previousBudget ?? 0, previousSpent, previousRollover ?? false,
     )
-    return { ...budget, carryover, effectiveBudget: budget.budget + carryover }
+    return { ...budget, carryover, effectiveBudget: sumMoney([budget.budget, carryover]) }
   })
 }

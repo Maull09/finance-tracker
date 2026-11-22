@@ -127,6 +127,13 @@
       "when": 1795356561493,
       "tag": "0017_reconciliation_decimal_balance",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795374319590,
+      "tag": "0018_decimal_money_fields",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import { calculateHoldings, investmentTotals } from "@/lib/investments"
 import { authenticatedResponse } from "@/lib/server/authenticated-response"
 import { readBalanceLedger, readReservedCash, debtSummaryQuery } from "@/lib/server/financial-queries"
 import { readLatestPrices } from "@/lib/server/market-queries"
+import { sumMoney } from "@/lib/money"
 
 export async function GET(request: Request) {
   return authenticatedResponse(async (db) => {
@@ -24,26 +25,23 @@ export async function GET(request: Request) {
     })
     const liabilities = balances
       .filter((debt) => debt.type === "utang")
-      .reduce((total, debt) => total + debt.remaining, 0)
+      .reduce((total, debt) => sumMoney([total, debt.remaining]), 0)
     const receivables = balances
       .filter((debt) => debt.type === "piutang")
-      .reduce((total, debt) => total + debt.remaining, 0)
+      .reduce((total, debt) => sumMoney([total, debt.remaining]), 0)
     const reservedCash = [...reservations.reserved.values()].reduce(
-      (total, amount) => total + amount,
+      (total, amount) => sumMoney([total, amount]),
       0,
     )
     const knownNetWorth =
-      ledger.cashBalance +
-      investments.knownMarketValue +
-      receivables -
-      liabilities
+      sumMoney([ledger.cashBalance, investments.knownMarketValue, receivables, -liabilities])
     return NextResponse.json({
       cash: ledger.cashBalance,
       investments,
       liabilities,
       receivables,
       reservedCash,
-      availableCash: ledger.cashBalance - reservedCash,
+      availableCash: sumMoney([ledger.cashBalance, -reservedCash]),
       knownNetWorth,
       netWorth: investments.unpricedCount ? null : knownNetWorth,
       accounts: ledger.summaries,

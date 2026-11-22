@@ -9,7 +9,7 @@ describe("AI financial input validation", () => {
     expect(aiDraftSchema.safeParse(incomplete).success).toBe(true)
     expect(confirmedDraftSchema.safeParse(incomplete).success).toBe(false)
   })
-  it.each([0, -1, 1.5, 2147483648, Number.NaN])("rejects unsafe IDR amount %s", (amount) => {
+  it.each([0, -1, 1.555, 2147483648, Number.NaN])("rejects unsafe IDR amount %s", (amount) => {
     expect(confirmedDraftSchema.safeParse({ ...draft, amount }).success).toBe(false)
   })
   it("rejects invalid calendar dates and hidden model control fields", () => {
@@ -23,11 +23,11 @@ describe("AI financial input validation", () => {
     expect(confirmedDraftSchema.safeParse({ ...draft, type: "transfer", destinationAccountId: 2 }).success).toBe(true)
     expect(confirmedDraftSchema.safeParse({ ...draft, destinationAccountId: 2 }).success).toBe(false)
   })
-  it("does not accept fabricated dates or fractional receipt totals", () => {
+  it("rejects fabricated dates and receipt totals with excessive precision", () => {
     const receipt = { merchant: null, total: null, currency: null, date: null, category: "Lainnya", notes: "Unreadable" }
     expect(receiptSchema.safeParse(receipt).success).toBe(true)
     expect(receiptSchema.safeParse({ ...receipt, date: "2026-13-01" }).success).toBe(false)
-    expect(receiptSchema.safeParse({ ...receipt, total: 12.5 }).success).toBe(false)
+    expect(receiptSchema.safeParse({ ...receipt, total: 12.555 }).success).toBe(false)
   })
   it("checks file signatures rather than trusting a claimed image MIME type", () => {
     expect(receiptMimeType(new TextEncoder().encode("<svg onload='alert(1)'>"))).toBeNull()

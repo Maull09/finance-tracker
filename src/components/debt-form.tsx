@@ -1,5 +1,8 @@
 "use client"
 
+import { MoneyInput } from "./money-input"
+import { parseTransactionAmount } from "@/lib/transaction-amount"
+
 import { useState } from "react"
 import { Pencil, Plus } from "lucide-react"
 import { ErrorNotice, Field, SubmitButton, useFeedback } from "./feedback"
@@ -109,7 +112,7 @@ export function AddDebtForm({
           {t(debt ? "edit" : "addDebt")}
         </Button>
       </DialogTrigger>
-      <DialogContent showCloseButton={!busy}>
+      <DialogContent showCloseButton={!busy} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t(debt ? "editDebt" : "addDebt")}</DialogTitle>
           <DialogDescription>
@@ -143,12 +146,10 @@ export function AddDebtForm({
               />
             </Field>
             <Field id="debt-amount" label={t("amountIdr")} required>
-              <Input
+              <MoneyInput
                 id="debt-amount"
-                type="number"
-                min={Math.max(1, debt?.paidAmount ?? 0)}
+                min={Math.max(0.01, debt?.paidAmount ?? 0)}
                 max="2147483647"
-                step="1"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 required
@@ -186,7 +187,7 @@ export function AddDebtForm({
             </Button>
             <SubmitButton
               busy={busy}
-              disabled={!name.trim() || Number(amount) <= 0}
+              disabled={!name.trim() || parseTransactionAmount(amount) === null}
             >
               {t(debt ? "saveChanges" : "saveDebt")}
             </SubmitButton>
