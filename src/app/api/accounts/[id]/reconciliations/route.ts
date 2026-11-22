@@ -11,12 +11,14 @@ import { calculateAccountBalance } from "@/lib/calculations"
 import { authenticatedResponse } from "@/lib/server/authenticated-response"
 import { getToday, isDate } from "@/lib/finance"
 import { tradeCashChange } from "@/lib/investments"
+import { parseMoneyInput } from "@/lib/money-input"
+import { integerInput, recordInput } from "@/lib/planning-validation"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
 export async function GET(request: NextRequest, { params }: RouteContext) {
   return authenticatedResponse(async (db) => {
-    const accountId = Number((await params).id)
+    const accountId = integerInput((await params).id, 1, 2_147_483_647)
     const data = await db
       .select()
       .from(reconciliations)
@@ -28,17 +30,16 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
   return authenticatedResponse(async (db) => {
-    const accountId = Number((await params).id)
-    const body = await request.json()
-    const actualBalance = Number(body.actualBalance)
+    const accountId = integerInput((await params).id, 1, 2_147_483_647)
+    const body = recordInput(await request.json())
+    const actualBalance = parseMoneyInput(
+      body.actualBalance,
+      -2_147_483_648,
+      2_147_483_647,
+    )
     const date = typeof body.date === "string" ? body.date : getToday()
 
-    if (
-      !Number.isSafeInteger(accountId) ||
-      accountId <= 0 ||
-      !Number.isSafeInteger(actualBalance) ||
-      !isDate(date)
-    )
+    if (actualBalance === null || !isDate(date))
       return NextResponse.json({ code: "invalidInput" }, { status: 400 })
 
     const [account] = await db
@@ -54,13 +55,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       )),
       db.select().from(stockTrades).where(and(eq(stockTrades.accountId, accountId), lte(stockTrades.date, date))),
     ])
-    const recordedBalance =
-      calculateAccountBalance(
-        account.initialBalance,
-        accountId,
-        accountTransactions,
+    const recordedCents =
+      Math.round(
+        calculateAccountBalance(account.initialBalance, accountId, accountTransactions) * 100,
       ) +
-      trades.reduce((total, trade) => total + tradeCashChange(trade), 0)
+      trades.reduce(
+        (total, trade) => total + Math.round(tradeCashChange(trade) * 100),
+        0,
+      )
     const [reconciliation] = await db
       .insert(reconciliations)
       .values({
@@ -74,8 +76,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json(
       {
         ...reconciliation,
-        recordedBalance,
-        difference: actualBalance - recordedBalance,
+        recordedBalance: recordedCents / 100,
+        difference: (Math.round(actualBalance * 100) - recordedCents) / 100,
       },
       { status: 201 },
     )

@@ -27,6 +27,7 @@ import { Input } from "./ui/input"
 import { jsonBody, requestJson } from "@/lib/client-api"
 import { useRemoteData } from "@/lib/use-remote-data"
 import { getToday } from "@/lib/finance"
+import { parseMoneyInput } from "@/lib/money-input"
 import type { AccountSummary as Summary } from "@/lib/types"
 
 export function AccountSummary() {
@@ -111,16 +112,17 @@ function ReconcileAccount({ account }: { account: Summary }) {
   const [difference, setDifference] = useState<number | null>(null)
   const [error, setError] = useState("")
   const [busy, setBusy] = useState(false)
+  const actualBalance = parseMoneyInput(actual, -2_147_483_648, 2_147_483_647)
   async function reconcile(event: React.FormEvent) {
     event.preventDefault()
-    if (busy) return
+    if (busy || actualBalance === null) return
     setBusy(true)
     setError("")
     setDifference(null)
     try {
       const result = await requestJson<{ difference: number }>(
         "/api/accounts/" + account.id + "/reconciliations",
-        jsonBody("POST", { actualBalance: actual, date: getToday() }),
+        jsonBody("POST", { actualBalance, date: getToday() }),
       )
       setDifference(result.difference)
     } catch (reason) {
@@ -161,11 +163,18 @@ function ReconcileAccount({ account }: { account: Summary }) {
               {formatCurrency(account.balance)}
             </p>
           </div>
-          <Field id={id} label={t("actualBalance") + " (IDR)"} required>
+          <Field
+            id={id}
+            label={t("actualBalance") + " (IDR)"}
+            hint={t("actualBalanceHint")}
+            required
+          >
             <Input
               id={id}
-              type="number"
-              step="1"
+              type="text"
+              inputMode="decimal"
+              pattern="-?[0-9]+([.,][0-9]{1,2})?"
+              aria-describedby={id + "-hint"}
               value={actual}
               onChange={(event) => {
                 setActual(event.target.value)
@@ -174,6 +183,11 @@ function ReconcileAccount({ account }: { account: Summary }) {
               disabled={busy}
               required
             />
+            {actualBalance !== null && (
+              <p className="text-sm tabular-nums text-brand-active">
+                {formatCurrency(actualBalance)}
+              </p>
+            )}
           </Field>
           <ErrorNotice message={error} />
           {difference !== null && (
@@ -198,7 +212,7 @@ function ReconcileAccount({ account }: { account: Summary }) {
             >
               {t(difference === null ? "cancel" : "done")}
             </Button>
-            <SubmitButton busy={busy} disabled={actual === ""}>
+            <SubmitButton busy={busy} disabled={actualBalance === null}>
               {t("compareBalances")}
             </SubmitButton>
           </DialogFooter>

@@ -138,6 +138,7 @@ export function parseDebt(value: unknown) {
 
 export function parseRecurring(value: unknown) {
   const body = recordInput(value)
+  integerInput(body.amount, 1, 2_147_483_647)
   const transaction = parseTransactionInput({ ...body, description: textInput(body.description, 500, false), date: body.startDate })
   if (
     !transaction ||

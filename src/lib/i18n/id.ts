@@ -1,6 +1,7 @@
 import type { en } from "./en"
 
 export const id: Record<keyof typeof en, string> = {
+  transactionAmountHint: "Gunakan maksimal 2 angka desimal, misalnya 243060,44 atau 243060.44. Tanpa pemisah ribuan.",
   "subcategory": "Subkategori",
   "subcategoryHint": "Opsional. Total tetap dikelompokkan dalam kategori utama.",
   "noSubcategory": "Tanpa subkategori",
@@ -182,7 +183,8 @@ export const id: Record<keyof typeof en, string> = {
   recordedBalance: "Saldo menurut catatan",
   actualBalance: "Saldo aktual di rekening",
   compareBalances: "Bandingkan saldo",
-  actualBalanceInvalid: "Masukkan saldo akun sebenarnya sebagai nominal bulat dalam IDR.",
+  actualBalanceInvalid: "Masukkan saldo IDR yang valid dengan maksimal 2 angka desimal.",
+  actualBalanceHint: "Gunakan maksimal 2 desimal, misalnya 594585,79 atau 594585.79, tanpa pemisah ribuan. Saldo nol dan negatif juga diperbolehkan.",
   balancesMatch: "Saldo cocok dengan catatan.",
   balanceDifference: "Selisih {amount} dari catatan.",
   addAccount: "Tambah akun",

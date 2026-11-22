@@ -39,7 +39,7 @@ export async function readFinancialHealth(connection: UserDatabase, input: Healt
           coalesce(max(amount) filter (where type = 'income'), 0) as "largestIncomeCategory"
         from monthly_categories group by month
       ), movements as (
-        select account_id, sum(case when type = 'income' then amount::bigint else -amount::bigint end) as amount
+        select account_id, sum(case when type = 'income' then amount else -amount end) as amount
         from transactions where date <= ${period.asOf} group by account_id
         union all
         select destination_account_id, sum(amount) from transactions

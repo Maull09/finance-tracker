@@ -1,4 +1,5 @@
 export const en = {
+  transactionAmountHint: "Use up to 2 decimal places, for example 243060.44 or 243060,44. Do not use thousands separators.",
   "subcategory": "Subcategory",
   "subcategoryHint": "Optional. Totals stay grouped under the main category.",
   "noSubcategory": "No subcategory",
@@ -180,7 +181,8 @@ export const en = {
   recordedBalance: "Recorded balance",
   actualBalance: "Actual account balance",
   compareBalances: "Compare balances",
-  actualBalanceInvalid: "Enter the actual account balance as a whole amount in IDR.",
+  actualBalanceInvalid: "Enter a valid IDR balance with up to 2 decimal places.",
+  actualBalanceHint: "Use up to 2 decimals, for example 594585.79 or 594585,79, without thousands separators. Zero and negative balances are allowed.",
   balancesMatch: "The balance matches your records.",
   balanceDifference: "Difference of {amount} from your records.",
   addAccount: "Add account",

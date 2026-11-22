@@ -9,6 +9,17 @@ import {
 import { parseTransactionInput } from "@/lib/validation"
 
 describe("financial calculations", () => {
+  it("calculates fractional income, expenses and transfers in cents", () => {
+    const base = { accountId: 1, destinationAccountId: null, date: "2026-11-22" }
+    const transactions = [
+      { ...base, type: "income" as const, amount: 0.1 },
+      { ...base, type: "income" as const, amount: 0.2 },
+      { ...base, type: "expense" as const, amount: 0.3 },
+      { ...base, type: "transfer" as const, amount: 0.44, destinationAccountId: 2 },
+    ]
+    expect(calculateAccountBalance(1, 1, transactions)).toBe(0.56)
+    expect(calculateAccountBalance(0, 2, transactions)).toBe(0.44)
+  })
   it.each([2147483648, -2147483649, true, [], Infinity])(
     "rejects values outside PostgreSQL integer bounds: %s",
     (amount) => {
