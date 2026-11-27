@@ -99,7 +99,7 @@ function PlannedCashflowList({
       {entries.map((entry, index) => (
         <div
           key={index}
-          className="grid gap-3 rounded-lg border bg-muted p-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"
+          className="grid items-start gap-3 rounded-lg border bg-muted p-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
         >
           <Field id={`${kind}-name-${index}`} label={labels.name} required>
             <Input
@@ -141,7 +141,7 @@ function PlannedCashflowList({
             type="button"
             variant="ghost"
             size="icon"
-            className="text-negative hover:bg-negative-soft hover:text-negative"
+            className="justify-self-end text-negative hover:bg-negative-soft hover:text-negative md:mt-[1.375rem]"
             onClick={() => onRemove(index)}
             aria-label={labels.remove}
           >

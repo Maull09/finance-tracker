@@ -275,7 +275,7 @@ function Dashboard() {
               aria-labelledby="daily-analysis-heading"
               className="grid gap-5 xl:grid-cols-5"
             >
-              <Card className="xl:col-span-2">
+              <Card className="self-start xl:col-span-2">
                 <CardHeader>
                   <CardTitle id="daily-analysis-heading">
                     {t("dailyAnalysis")}
@@ -283,30 +283,30 @@ function Dashboard() {
                   <CardDescription>{t("dailyAnalysisDescription")}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <dl className="grid divide-y border-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                    <div className="py-4 sm:px-4 sm:first:pl-0 sm:last:pr-0">
+                  <dl className="grid divide-y border-y sm:grid-cols-3 sm:gap-y-2 sm:divide-x sm:divide-y-0">
+                    <div className="py-4 sm:row-span-2 sm:grid sm:grid-rows-subgrid sm:px-4 sm:first:pl-0 sm:last:pr-0">
                       <dt className="text-sm text-muted-foreground">
                         {t("todayIncome")}
                       </dt>
-                      <dd className="mt-2 break-words text-lg font-semibold tabular-nums text-positive">
+                      <dd className="mt-2 break-words text-lg font-semibold tabular-nums text-positive sm:mt-0">
                         {formatCurrency(data.today.income)}
                       </dd>
                     </div>
-                    <div className="py-4 sm:px-4 sm:first:pl-0 sm:last:pr-0">
+                    <div className="py-4 sm:row-span-2 sm:grid sm:grid-rows-subgrid sm:px-4 sm:first:pl-0 sm:last:pr-0">
                       <dt className="text-sm text-muted-foreground">
                         {t("todayExpense")}
                       </dt>
-                      <dd className="mt-2 break-words text-lg font-semibold tabular-nums text-negative">
+                      <dd className="mt-2 break-words text-lg font-semibold tabular-nums text-negative sm:mt-0">
                         {formatCurrency(data.today.expense)}
                       </dd>
                     </div>
-                    <div className="py-4 sm:px-4 sm:first:pl-0 sm:last:pr-0">
+                    <div className="py-4 sm:row-span-2 sm:grid sm:grid-rows-subgrid sm:px-4 sm:first:pl-0 sm:last:pr-0">
                       <dt className="text-sm text-muted-foreground">
                         {t("netToday")}
                       </dt>
                       <dd
                         className={
-                          "mt-2 break-words text-lg font-semibold tabular-nums " +
+                          "mt-2 break-words text-lg font-semibold tabular-nums sm:mt-0 " +
                           (data.today.net < 0
                             ? "text-negative"
                             : "text-positive")
