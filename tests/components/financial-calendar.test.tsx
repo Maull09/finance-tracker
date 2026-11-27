@@ -54,7 +54,7 @@ describe("recording early or late from the financial calendar", () => {
     return input
   }
   async function setAmount(dialog: HTMLElement, value: string) {
-    const input = dialog.querySelector<HTMLInputElement>('input[type="number"]')!
+    const input = dialog.querySelector<HTMLInputElement>('input[inputmode="decimal"]')!
     await act(async () => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value)
       input.dispatchEvent(new Event("input", { bubbles: true }))
@@ -69,7 +69,7 @@ describe("recording early or late from the financial calendar", () => {
     expect(dialog.textContent).toContain(messages[locale].scheduledAmount)
     expect(dialog.textContent).toContain(messages[locale].actualTransactionAmount)
     expect(dialog.textContent).toContain(messages[locale].actualTransactionAmountHint)
-    expect(dialog.querySelector<HTMLInputElement>('input[type="number"]')?.value).toBe("1000000")
+    expect(dialog.querySelector<HTMLInputElement>('input[inputmode="decimal"]')?.value).toBe("1000000")
     expect(dialog.textContent).toContain("Bank")
     expect(dialog.querySelector<HTMLInputElement>('input[type="date"]')?.value).toBe("2026-10-23")
     expect(dialog.querySelectorAll('input[type="date"]')).toHaveLength(1)
@@ -99,7 +99,7 @@ describe("recording early or late from the financial calendar", () => {
     expect(amount.value).toBe("5500000")
     expect(JSON.parse(mocks.request.mock.calls[0][1].body)).toEqual({ scheduledDate: "2026-10-01", date: "2026-10-22", amount: 5500000 })
   })
-  it.each(["", "0", "-1", "1.5", "2147483648"])("prevents invalid actual amount %s from creating a transaction", async (amount) => {
+  it.each(["", "0", "-1", "1.555", "2147483648"])("prevents invalid actual amount %s from creating a transaction", async (amount) => {
     const dialog = await open()
     await setAmount(dialog, amount)
     expect(dialog.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true)

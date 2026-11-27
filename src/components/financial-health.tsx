@@ -1,5 +1,8 @@
 "use client"
 
+import { MoneyInput } from "./money-input"
+import { parseMoneyInput } from "@/lib/money-input"
+
 import { useState } from "react"
 import { RefreshCw } from "lucide-react"
 import { getCurrentMonth } from "@/lib/finance"
@@ -12,7 +15,6 @@ import { useLanguage } from "./language-provider"
 import { ErrorNotice, Field, LoadingState, PageHeading } from "./feedback"
 import { Button } from "./ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
-import { Input } from "./ui/input"
 
 export function FinancialHealth() {
   const { t } = useLanguage()
@@ -46,8 +48,8 @@ function HealthAnalysis({ snapshot, refreshing }: { snapshot: FinancialHealthRep
   const [monthlyDebtPayment, setMonthlyDebtPayment] = useState("")
   const parsed = healthInputSchema.safeParse({
     month: snapshot.month,
-    essentialExpense: essentialExpense === "" ? null : Number(essentialExpense),
-    monthlyDebtPayment: monthlyDebtPayment === "" ? null : Number(monthlyDebtPayment),
+    essentialExpense: essentialExpense === "" ? null : parseMoneyInput(essentialExpense, 0, 2_147_483_647) ?? NaN,
+    monthlyDebtPayment: monthlyDebtPayment === "" ? null : parseMoneyInput(monthlyDebtPayment, 0, 2_147_483_647) ?? NaN,
   })
   const valid = parsed.success && (parsed.data.monthlyDebtPayment === null || parsed.data.monthlyDebtPayment >= snapshot.recordedDebtPayments)
   const report = calculateFinancialHealth(snapshot, valid && parsed.success ? parsed.data : {
@@ -79,12 +81,12 @@ function HealthAnalysis({ snapshot, refreshing }: { snapshot: FinancialHealthRep
         <CardContent className="space-y-4">
           <div className="grid gap-5 md:grid-cols-2">
             <Field id="health-essential" label={t("healthEssentialInput")} hint={t("healthEssentialHint")}>
-              <Input className="min-h-11" id="health-essential" type="number" inputMode="numeric" min="0" max="2147483647" step="1" value={essentialExpense}
+              <MoneyInput className="min-h-11" id="health-essential" min="0" max="2147483647" value={essentialExpense}
                 aria-describedby="health-essential-hint" aria-invalid={!valid}
                 onChange={(event) => setEssentialExpense(event.target.value)} />
             </Field>
             <Field id="health-debt" label={t("healthDebtInput")} hint={t("healthDebtHint", { amount: formatCurrency(snapshot.recordedDebtPayments) })}>
-              <Input className="min-h-11" id="health-debt" type="number" inputMode="numeric" min={snapshot.recordedDebtPayments} max="2147483647" step="1" value={monthlyDebtPayment}
+              <MoneyInput className="min-h-11" id="health-debt" min={snapshot.recordedDebtPayments} max="2147483647" value={monthlyDebtPayment}
                 aria-describedby="health-debt-hint" aria-invalid={!valid}
                 onChange={(event) => setMonthlyDebtPayment(event.target.value)} />
             </Field>

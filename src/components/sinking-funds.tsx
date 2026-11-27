@@ -1,5 +1,9 @@
 "use client"
 
+import { sumMoney } from "@/lib/money"
+import { MoneyInput } from "./money-input"
+import { parseTransactionAmount } from "@/lib/transaction-amount"
+
 import { PageInsights } from "./page-insights"
 import { useId, useState } from "react"
 import { Plus, Trash2 } from "lucide-react"
@@ -317,7 +321,7 @@ function FundForm({
           {t(fund ? "edit" : "addFund")}
         </Button>
       </DialogTrigger>
-      <DialogContent showCloseButton={!busy}>
+      <DialogContent showCloseButton={!busy} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t(fund ? "editFund" : "addFund")}</DialogTitle>
           <DialogDescription>{t("fundHint")}</DialogDescription>
@@ -368,12 +372,10 @@ function FundForm({
               label={t("targetAmount") + " (IDR)"}
               required
             >
-              <Input
+              <MoneyInput
                 id={id + "-target"}
-                type="number"
-                min={Math.max(1, fund?.allocated ?? 0)}
+                min={Math.max(0.01, fund?.allocated ?? 0)}
                 max="2147483647"
-                step="1"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 required
@@ -414,7 +416,7 @@ function FundForm({
             <SubmitButton
               busy={busy}
               disabled={
-                !name.trim() || !account || Number(amount) <= 0 || !date
+                !name.trim() || !account || parseTransactionAmount(amount) === null || !date
               }
             >
               {t(fund ? "saveChanges" : "saveFund")}
@@ -450,7 +452,7 @@ function FundEntryForm({
       ? Math.max(
           0,
           Math.min(
-            fund.targetAmount - fund.allocated,
+            sumMoney([fund.targetAmount, -fund.allocated]),
             account?.availableCash ?? 0,
           ),
         )
@@ -524,12 +526,10 @@ function FundEntryForm({
               hint={t("remainingAmount", { amount: formatCurrency(limit) })}
               required
             >
-              <Input
+              <MoneyInput
                 id={id + "-amount"}
-                type="number"
-                min="1"
+                min="0.01"
                 max={limit}
-                step="1"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 required
@@ -560,7 +560,7 @@ function FundEntryForm({
             </Button>
             <SubmitButton
               busy={busy}
-              disabled={Number(amount) <= 0 || Number(amount) > limit}
+              disabled={parseTransactionAmount(amount) === null || (parseTransactionAmount(amount) ?? 0) > limit}
             >
               {t(kind)}
             </SubmitButton>

@@ -8,6 +8,7 @@ import { fundBalance, monthlyFundSaving } from "@/lib/planning"
 import { getToday } from "@/lib/finance"
 import { readReservations } from "@/lib/server/ledger"
 import { readBalanceLedger } from "@/lib/server/financial-queries"
+import { sumMoney } from "@/lib/money"
 
 export async function GET(request: Request) {
   return authenticatedResponse(async (db) => {
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
       accounts: ledger.summaries.map((account) => ({
         ...account,
         availableCash:
-          account.balance - (reservations.reserved.get(account.id) ?? 0),
+          sumMoney([account.balance, -(reservations.reserved.get(account.id) ?? 0)]),
       })),
     })
   }, request)

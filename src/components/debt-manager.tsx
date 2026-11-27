@@ -1,5 +1,9 @@
 "use client"
 
+import { sumMoney } from "@/lib/money"
+import { MoneyInput } from "./money-input"
+import { parseTransactionAmount } from "@/lib/transaction-amount"
+
 import { PageInsights } from "./page-insights"
 import { useId, useState } from "react"
 import { AddDebtForm, type Debt } from "./debt-form"
@@ -102,7 +106,7 @@ function DebtCard({ debt, accounts }: { debt: Debt; accounts: Account[] }) {
   const [date, setDate] = useState(getToday())
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
-  const remaining = Math.max(0, debt.amount - debt.paidAmount)
+  const remaining = Math.max(0, sumMoney([debt.amount, -debt.paidAmount]))
   async function pay(event: React.FormEvent) {
     event.preventDefault()
     if (busy) return
@@ -187,7 +191,7 @@ function DebtCard({ debt, accounts }: { debt: Debt; accounts: Account[] }) {
                 {t("recordPayment")}
               </Button>
             </DialogTrigger>
-            <DialogContent showCloseButton={!busy}>
+            <DialogContent showCloseButton={!busy} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {t("recordPayment")} · {debt.name}
@@ -203,12 +207,10 @@ function DebtCard({ debt, accounts }: { debt: Debt; accounts: Account[] }) {
                   })}
                   required
                 >
-                  <Input
+                  <MoneyInput
                     id={id + "-amount"}
-                    type="number"
-                    min="1"
+                    min="0.01"
                     max={remaining}
-                    step="1"
                     value={amount}
                     onChange={(event) => setAmount(event.target.value)}
                     disabled={busy}
@@ -263,8 +265,8 @@ function DebtCard({ debt, accounts }: { debt: Debt; accounts: Account[] }) {
                     busy={busy}
                     disabled={
                       !account ||
-                      Number(amount) <= 0 ||
-                      Number(amount) > remaining
+                      parseTransactionAmount(amount) === null ||
+                      (parseTransactionAmount(amount) ?? 0) > remaining
                     }
                   >
                     {t("savePayment")}

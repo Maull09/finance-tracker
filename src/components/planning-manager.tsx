@@ -1,5 +1,8 @@
 "use client"
 
+import { MoneyInput } from "./money-input"
+import { parseTransactionAmount } from "@/lib/transaction-amount"
+
 import { PageInsights } from "./page-insights"
 import { useEffect, useState } from "react"
 import { CalendarClock, Pencil, Plus, Trash2 } from "lucide-react"
@@ -440,12 +443,10 @@ function AddSchedule({
               />
             </Field>
             <Field id="schedule-amount" label={t("amountIdr")} required>
-              <Input
+              <MoneyInput
                 id="schedule-amount"
-                type="number"
-                min="1"
+                min="0.01"
                 max="2147483647"
-                step="1"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 required
@@ -586,7 +587,7 @@ function AddSchedule({
                 !name.trim() ||
                 !category ||
                 !accountId ||
-                Number(amount) <= 0 ||
+                parseTransactionAmount(amount) === null ||
                 (type === "transfer" &&
                   (!destinationAccountId ||
                     destinationAccountId === accountId)) ||

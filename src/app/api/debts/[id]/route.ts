@@ -1,3 +1,4 @@
+import { sumMoney } from "@/lib/money"
 import { NextRequest, NextResponse } from "next/server"
 import { debtPayments, debts } from "@/db/schema"
 import { eq } from "drizzle-orm"
@@ -23,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         .from(debtPayments)
         .where(eq(debtPayments.debtId, id))
       const paid = payments.reduce(
-        (total, payment) => total + payment.amount,
+        (total, payment) => sumMoney([total, payment.amount]),
         0,
       )
       if (

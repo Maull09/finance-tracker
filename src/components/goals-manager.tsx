@@ -1,5 +1,9 @@
 "use client"
 
+import { sumMoney } from "@/lib/money"
+import { MoneyInput } from "./money-input"
+import { parseTransactionAmount } from "@/lib/transaction-amount"
+
 import { PageInsights } from "./page-insights"
 import { useId, useState } from "react"
 import { Pencil, Plus, Target } from "lucide-react"
@@ -161,7 +165,7 @@ function AddGoal({ goal }: { goal?: Goal } = {}) {
         jsonBody(goal ? "PATCH" : "POST", {
           title,
           description,
-          targetAmount: Number(target),
+          targetAmount: parseTransactionAmount(target),
           targetDate: date,
           category: goal?.category ?? "other",
         }),
@@ -205,7 +209,7 @@ function AddGoal({ goal }: { goal?: Goal } = {}) {
           {t(goal ? "edit" : "addGoal")}
         </Button>
       </DialogTrigger>
-      <DialogContent showCloseButton={!busy}>
+      <DialogContent showCloseButton={!busy} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t(goal ? "editGoal" : "addGoal")}</DialogTitle>
           <DialogDescription>
@@ -240,12 +244,10 @@ function AddGoal({ goal }: { goal?: Goal } = {}) {
               label={t("targetAmount") + " (IDR)"}
               required
             >
-              <Input
+              <MoneyInput
                 id="goal-target"
-                type="number"
-                min={Math.max(1, goal?.currentAmount ?? 0)}
+                min={Math.max(0.01, goal?.currentAmount ?? 0)}
                 max="2147483647"
-                step="1"
                 value={target}
                 onChange={(event) => setTarget(event.target.value)}
                 required
@@ -273,7 +275,7 @@ function AddGoal({ goal }: { goal?: Goal } = {}) {
             </Button>
             <SubmitButton
               busy={busy}
-              disabled={!title.trim() || Number(target) <= 0 || !date}
+              disabled={!title.trim() || parseTransactionAmount(target) === null || !date}
             >
               {t(goal ? "saveChanges" : "saveGoal")}
             </SubmitButton>
@@ -288,7 +290,7 @@ function GoalCard({ goal, accounts }: { goal: Goal; accounts: Account[] }) {
   const { t, formatCurrency, formatDate } = useLanguage()
   const notify = useFeedback()
   const id = useId()
-  const remaining = Math.max(goal.targetAmount - goal.currentAmount, 0)
+  const remaining = Math.max(sumMoney([goal.targetAmount, -goal.currentAmount]), 0)
   const percentage = Math.round((goal.currentAmount / goal.targetAmount) * 100)
   const days = Math.round(
     (Date.parse(goal.targetDate) - Date.parse(getToday())) / 86400000,
@@ -315,7 +317,7 @@ function GoalCard({ goal, accounts }: { goal: Goal; accounts: Account[] }) {
       await requestJson(
         "/api/goals/" + goal.id + "/contributions",
         jsonBody("POST", {
-          amount: Number(amount),
+          amount: parseTransactionAmount(amount),
           accountId: Number(account),
         }),
       )
@@ -403,7 +405,7 @@ function GoalCard({ goal, accounts }: { goal: Goal; accounts: Account[] }) {
                 {t("contribute")}
               </Button>
             </DialogTrigger>
-            <DialogContent showCloseButton={!busy}>
+            <DialogContent showCloseButton={!busy} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {t("contribution")} · {goal.title}
@@ -419,12 +421,10 @@ function GoalCard({ goal, accounts }: { goal: Goal; accounts: Account[] }) {
                   })}
                   required
                 >
-                  <Input
+                  <MoneyInput
                     id={id + "-amount"}
-                    type="number"
-                    min="1"
+                    min="0.01"
                     max={remaining}
-                    step="1"
                     value={amount}
                     onChange={(event) => setAmount(event.target.value)}
                     disabled={busy}
@@ -488,8 +488,8 @@ function GoalCard({ goal, accounts }: { goal: Goal; accounts: Account[] }) {
                     busy={busy}
                     disabled={
                       !account ||
-                      Number(amount) <= 0 ||
-                      Number(amount) > remaining
+                      parseTransactionAmount(amount) === null ||
+                      (parseTransactionAmount(amount) ?? 0) > remaining
                     }
                   >
                     {t("contribute")}

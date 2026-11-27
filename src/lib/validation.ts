@@ -8,6 +8,7 @@ import {
 } from "./finance"
 import { isValidSubcategory } from "./categories"
 import { parseTransactionAmount } from "./transaction-amount"
+import { parseMoneyInput } from "./money-input"
 
 type RecordBody = Record<string, unknown>
 
@@ -92,7 +93,7 @@ export function parseAccountInput(value: unknown): AccountInput | null {
 
   const name = toRequiredText(value.name)
   const type = value.type
-  const initialBalance = value.initialBalance == null || value.initialBalance === "" ? 0 : toInteger(value.initialBalance)
+  const initialBalance = value.initialBalance == null || value.initialBalance === "" ? 0 : parseMoneyInput(value.initialBalance, -2_147_483_648, 2_147_483_647)
 
   if (!name || !accountTypes.includes(type as AccountType) || initialBalance == null) {
     return null
@@ -105,7 +106,7 @@ export function parseBudgetInput(value: unknown): BudgetInput | null {
   if (!isRecord(value)) return null
 
   const category = toRequiredText(value.category)
-  const budget = toPositiveInteger(value.budget)
+  const budget = parseTransactionAmount(value.budget)
   const periodStart = value.periodStart
 
   if (!category || budget == null || !isMonth(periodStart)) {

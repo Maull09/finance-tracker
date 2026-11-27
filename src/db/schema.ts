@@ -131,7 +131,7 @@ export const debts = pgTable(
     id: serial("id").primaryKey(),
     type: text("type").notNull(), // "utang" | "piutang"
     name: text("name").notNull(),
-    amount: integer("amount").notNull(),
+    amount: numeric("amount", { precision: 12, scale: 2, mode: "number" }).notNull(),
     description: text("description"),
     status: debtStatusEnum("status").notNull().default("unpaid"),
     dueDate: date("due_date"),
@@ -155,7 +155,7 @@ export const accounts = pgTable(
     id: serial("id").primaryKey(),
     name: text("name").notNull(),
     type: accountTypeEnum("type").notNull(),
-    initialBalance: integer("initial_balance").notNull().default(0),
+    initialBalance: numeric("initial_balance", { precision: 12, scale: 2, mode: "number" }).notNull().default(0),
     description: text("description"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
@@ -224,8 +224,8 @@ export const budgets = pgTable(
     ),
     id: serial("id").primaryKey(),
     category: text("category").notNull(),
-    budget: integer("budget").notNull(),
-    spent: integer("spent").notNull().default(0),
+    budget: numeric("budget", { precision: 12, scale: 2, mode: "number" }).notNull(),
+    spent: numeric("spent", { precision: 12, scale: 2, mode: "number" }).notNull().default(0),
     period: budgetPeriodEnum("period").notNull().default("monthly"),
     periodStart: date("period_start").notNull(),
     rolloverEnabled: boolean("rollover_enabled").notNull().default(false),
@@ -252,7 +252,7 @@ export const recurringTransactions = pgTable(
     id: serial("id").primaryKey(),
     name: text("name").notNull(),
     type: transactionTypeEnum("type").notNull(),
-    amount: integer("amount").notNull(),
+    amount: numeric("amount", { precision: 12, scale: 2, mode: "number" }).notNull(),
     category: text("category").notNull(),
     subcategory: text("subcategory"),
     description: text("description"),
@@ -295,7 +295,7 @@ export const goalContributions = pgTable(
     accountId: integer("account_id")
       .references(() => accounts.id)
       .notNull(),
-    amount: integer("amount").notNull(),
+    amount: numeric("amount", { precision: 12, scale: 2, mode: "number" }).notNull(),
     date: date("date").notNull(),
     note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -325,7 +325,7 @@ export const debtPayments = pgTable(
     accountId: integer("account_id")
       .references(() => accounts.id)
       .notNull(),
-    amount: integer("amount").notNull(),
+    amount: numeric("amount", { precision: 12, scale: 2, mode: "number" }).notNull(),
     date: date("date").notNull(),
     note: text("note"),
     transactionId: integer("transaction_id")
@@ -378,8 +378,8 @@ export const goals = pgTable(
     id: serial("id").primaryKey(),
     title: text("title").notNull(),
     description: text("description"),
-    targetAmount: integer("target_amount").notNull(),
-    currentAmount: integer("current_amount").notNull().default(0),
+    targetAmount: numeric("target_amount", { precision: 12, scale: 2, mode: "number" }).notNull(),
+    currentAmount: numeric("current_amount", { precision: 12, scale: 2, mode: "number" }).notNull().default(0),
     targetDate: date("target_date").notNull(),
     category: text("category").notNull().default("other"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -428,7 +428,7 @@ export const stockTrades = pgTable(
       scale: 4,
       mode: "number",
     }).notNull(),
-    fees: bigint("fees", { mode: "number" }).notNull().default(0),
+    fees: numeric("fees", { precision: 21, scale: 2, mode: "number" }).notNull().default(0),
     date: date("date").notNull(),
     note: text("note").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -519,7 +519,7 @@ export const sinkingFunds = pgTable(
     accountId: integer("account_id")
       .notNull()
       .references(() => accounts.id),
-    targetAmount: bigint("target_amount", { mode: "number" }).notNull(),
+    targetAmount: numeric("target_amount", { precision: 21, scale: 2, mode: "number" }).notNull(),
     targetDate: date("target_date").notNull(),
     description: text("description").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -548,7 +548,7 @@ export const sinkingFundEntries = pgTable(
       .notNull()
       .references(() => sinkingFunds.id),
     kind: text("kind").notNull(),
-    amount: bigint("amount", { mode: "number" }).notNull(),
+    amount: numeric("amount", { precision: 21, scale: 2, mode: "number" }).notNull(),
     date: date("date").notNull(),
     note: text("note").notNull().default(""),
     transactionId: integer("transaction_id").references(() => transactions.id),

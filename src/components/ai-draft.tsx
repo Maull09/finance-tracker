@@ -10,6 +10,8 @@ import { confirmedDraftSchema, type AiDraftInput } from "@/lib/ai/validation"
 import type { AiDraft } from "@/lib/ai/types"
 import type { Account } from "@/lib/types"
 import { CategoryFields } from "./category-fields"
+import { MoneyInput } from "./money-input"
+import { parseTransactionAmount } from "@/lib/transaction-amount"
 
 export const aiSelectClass = "min-h-11 w-full rounded-lg border bg-card px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50"
 
@@ -18,6 +20,8 @@ export function AiDraftForm({ draft, accounts, disabled, onSaved, onBusy }: {
 }) {
   const { t, formatCurrency } = useLanguage()
   const [data, setData] = useState<AiDraftInput>(draft.data)
+  const [amount, setAmount] = useState(String(draft.data.amount ?? ""))
+  const actualAmount = parseTransactionAmount(amount)
   const [status, setStatus] = useState(draft.status)
   const [working, setWorking] = useState<"confirm" | "reject" | null>(null)
   const [error, setError] = useState("")
@@ -26,7 +30,7 @@ export function AiDraftForm({ draft, accounts, disabled, onSaved, onBusy }: {
 
   async function decide(action: "confirm" | "reject") {
     setError("")
-    const parsed = confirmedDraftSchema.safeParse(data)
+    const parsed = confirmedDraftSchema.safeParse({ ...data, amount: actualAmount })
     if (action === "confirm" && !parsed.success) {
       setError("aiMissingFields")
       return
@@ -52,7 +56,7 @@ export function AiDraftForm({ draft, accounts, disabled, onSaved, onBusy }: {
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 id={prefix + "-title"} className="font-semibold">{t("aiDraft")}</h3>
-          <p className="mt-1 break-words text-xl font-semibold tabular-nums">{data.amount ? formatCurrency(data.amount) : t("aiAmount")}</p>
+          <p className="mt-1 break-words text-xl font-semibold tabular-nums">{actualAmount !== null ? formatCurrency(actualAmount) : t("aiAmount")}</p>
         </div>
         {draft.receiptId && <a href={`/api/ai/receipts/${draft.receiptId}`} target="_blank" rel="noreferrer"
           className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm text-brand-active underline focus-visible:outline-2">{t("aiViewReceipt")}</a>}
@@ -70,8 +74,8 @@ export function AiDraftForm({ draft, accounts, disabled, onSaved, onBusy }: {
               </select>
             </Field>
             <Field id={prefix + "-amount"} label={t("aiAmount")} required>
-              <Input id={prefix + "-amount"} type="number" inputMode="numeric" required min="1" max="2147483647" step="1"
-                value={data.amount ?? ""} onChange={(event) => setData({ ...data, amount: event.target.value === "" ? null : Number(event.target.value) })} />
+              <MoneyInput id={prefix + "-amount"} required
+                value={amount} onChange={(event) => setAmount(event.target.value)} />
             </Field>
             {data.type !== "transfer" && <CategoryFields id={prefix} type={data.type} category={data.category} subcategory={data.subcategory}
               onChange={(category, subcategory) => setData({ ...data, category, subcategory })} />}

@@ -2,6 +2,13 @@ import { getToday, isDate } from "./finance"
 import { FinanceError } from "./finance-errors"
 import { tradeCashChange } from "./investments"
 import { parseTransactionInput } from "./validation"
+import { parseMoneyInput } from "./money-input"
+
+export function moneyInput(value: unknown, minimum = 0.01) {
+  const amount = parseMoneyInput(value, minimum, 2_147_483_647)
+  if (amount === null) throw new FinanceError("invalidInput")
+  return amount
+}
 
 export function recordInput(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value))
@@ -71,7 +78,7 @@ export function parseStockTrade(value: unknown) {
   const lots = decimalInput(body.lots, 6, 0.000001, 100_000)
   const shares = Math.round(lots * 1_000_000) / 10_000
   const price = decimalInput(body.price, 4, 0.0001, 1_000_000_000)
-  const fees = integerInput(body.fees ?? 0, 0, 2_147_483_647)
+  const fees = moneyInput(body.fees ?? 0, 0)
   const gross = -tradeCashChange({ side: "buy", shares, price, fees: 0 })
   if (
     gross <= 0 ||
@@ -98,7 +105,7 @@ export function parseFund(value: unknown) {
   return {
     name: textInput(body.name),
     accountId: integerInput(body.accountId, 1, 2_147_483_647),
-    targetAmount: integerInput(body.targetAmount, 1, 2_147_483_647),
+    targetAmount: moneyInput(body.targetAmount),
     targetDate: body.targetDate,
     description: textInput(body.description, 500, false),
   }
@@ -111,7 +118,7 @@ export function parseGoal(value: unknown) {
   return {
     title: textInput(body.title),
     description: textInput(body.description, 500, false),
-    targetAmount: integerInput(body.targetAmount, 1, 2_147_483_647),
+    targetAmount: moneyInput(body.targetAmount),
     targetDate: body.targetDate,
     category: textInput(body.category ?? "other"),
   }
@@ -130,7 +137,7 @@ export function parseDebt(value: unknown) {
   return {
     type: body.type as "utang" | "piutang",
     name: textInput(body.name),
-    amount: integerInput(body.amount, 1, 2_147_483_647),
+    amount: moneyInput(body.amount),
     description: textInput(body.description, 500, false),
     dueDate: body.dueDate ? String(body.dueDate) : null,
   }
@@ -138,7 +145,6 @@ export function parseDebt(value: unknown) {
 
 export function parseRecurring(value: unknown) {
   const body = recordInput(value)
-  integerInput(body.amount, 1, 2_147_483_647)
   const transaction = parseTransactionInput({ ...body, description: textInput(body.description, 500, false), date: body.startDate })
   if (
     !transaction ||
@@ -162,7 +168,7 @@ export function parseOccurrenceRecording(value: unknown) {
   if (!isDate(body.scheduledDate) || body.scheduledDate < "1900-01-01" || body.scheduledDate > "2100-12-31" ||
       !isDate(body.date) || body.date < "1900-01-01" || body.date > getToday())
     throw new FinanceError("invalidInput")
-  return { scheduledDate: body.scheduledDate, date: body.date, amount: integerInput(body.amount, 1, 2_147_483_647) }
+  return { scheduledDate: body.scheduledDate, date: body.date, amount: moneyInput(body.amount) }
 }
 
 export function parseSimulation(value: unknown) {
@@ -191,7 +197,7 @@ export function parseSimulation(value: unknown) {
         throw new FinanceError("invalidInput")
       return {
         name: textInput(input.name),
-        amount: integerInput(input.amount, 1, 2_147_483_647),
+        amount: moneyInput(input.amount),
         date: input.date,
       }
     })

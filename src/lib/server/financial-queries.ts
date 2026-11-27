@@ -1,3 +1,4 @@
+import { sumMoney } from "@/lib/money"
 import { and, asc, eq, getTableColumns, inArray, sql } from "drizzle-orm"
 import {
   accounts,
@@ -133,6 +134,6 @@ export async function readReservedCash(connection: ReadConnection, accountIds?: 
   const rows = await funds.unionAll(contributions)
   const reserved = new Map<number, number>()
   for (const row of rows)
-    reserved.set(row.accountId, (reserved.get(row.accountId) ?? 0) + row.amount)
+    reserved.set(row.accountId, sumMoney([reserved.get(row.accountId) ?? 0, row.amount]))
   return { reserved }
 }

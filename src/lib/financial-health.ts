@@ -1,7 +1,9 @@
 import { z } from "zod"
 import { getCurrentMonth, getNextMonthStart, getToday, isMonth } from "./finance"
+import { nonnegativeMoneySchema } from "./money-schema"
+import { sumMoney } from "./money"
 
-const optionalAmount = z.number().int().nonnegative().max(2_147_483_647).nullable()
+const optionalAmount = nonnegativeMoneySchema.nullable()
 
 export const healthInputSchema = z.object({
   month: z.string().refine(isMonth).refine((month) => month >= "1900-01" && month <= getCurrentMonth()),
@@ -71,13 +73,13 @@ export function calculateFinancialHealth(snapshot: HealthSnapshot, input: Health
     input,
     income,
     expense,
-    surplus: income - expense,
+    surplus: sumMoney([income, -expense]),
     savingsRate,
     expenseRatio: ratio(expense, income),
     emergencyMonths,
     debtServiceRatio,
     debtToAssetRatio,
-    netWorth: snapshot.totalAssets === null ? null : snapshot.totalAssets - snapshot.totalLiabilities,
+    netWorth: snapshot.totalAssets === null ? null : sumMoney([snapshot.totalAssets, -snapshot.totalLiabilities]),
     cashFlowDeviation: history.length >= 3 ? standardDeviation(history.map((row) => row.income - row.expense)) : null,
     spendingVolatility: history.length >= 3 && meanExpense > 0 ? standardDeviation(history.map((row) => row.expense)) / meanExpense : null,
     historyMonths: history.length,

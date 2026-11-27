@@ -1,5 +1,8 @@
 "use client"
 
+import { MoneyInput } from "./money-input"
+import { parseTransactionAmount } from "@/lib/transaction-amount"
+
 import { MonthPicker } from "./month-picker"
 
 import { PageInsights } from "./page-insights"
@@ -27,7 +30,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog"
-import { Input } from "./ui/input"
 import { Progress } from "./ui/progress"
 import {
   Select,
@@ -111,7 +113,7 @@ export function BudgetManager() {
           {t("addBudget")}
         </Button>
       </DialogTrigger>
-      <DialogContent showCloseButton={!busy}>
+      <DialogContent showCloseButton={!busy} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {t(editing ? "editBudget" : "addBudget")} · {formatMonth(month)}
@@ -151,13 +153,11 @@ export function BudgetManager() {
               hint={t("amountHint")}
               required
             >
-              <Input
+              <MoneyInput
                 id="budget-amount"
                 aria-describedby="budget-amount-hint"
-                type="number"
-                min="1"
+                min="0.01"
                 max="2147483647"
-                step="1"
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 required
@@ -188,7 +188,7 @@ export function BudgetManager() {
             </Button>
             <SubmitButton
               busy={busy}
-              disabled={!category || Number(amount) <= 0}
+              disabled={!category || parseTransactionAmount(amount) === null}
             >
               {t(editing ? "saveChanges" : "saveBudget")}
             </SubmitButton>

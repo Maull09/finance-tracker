@@ -8,6 +8,8 @@ import { Input } from "./ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
 import { getToday, isDate } from "@/lib/finance"
 import { jsonBody, requestJson } from "@/lib/client-api"
+import { MoneyInput } from "./money-input"
+import { parseTransactionAmount } from "@/lib/transaction-amount"
 
 export function RecordOccurrence({ occurrence, accountName, chooseScheduledDate = false }: {
   occurrence: { scheduleId: number; name: string; type: string; amount: number; date: string }
@@ -24,8 +26,8 @@ export function RecordOccurrence({ occurrence, accountName, chooseScheduledDate 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const today = getToday()
-  const actualAmount = Number(amount)
-  const validAmount = /^\d+$/.test(amount) && Number.isSafeInteger(actualAmount) && actualAmount > 0 && actualAmount <= 2_147_483_647
+  const actualAmount = parseTransactionAmount(amount)
+  const validAmount = actualAmount !== null
   const valid = isDate(date) && date >= "1900-01-01" && date <= today && isDate(scheduledDate) &&
     scheduledDate >= "1900-01-01" && scheduledDate <= "2100-12-31" && validAmount
 
@@ -69,9 +71,8 @@ export function RecordOccurrence({ occurrence, accountName, chooseScheduledDate 
         <form onSubmit={record} className="space-y-4">
           <fieldset disabled={busy} className="space-y-4">
             <Field id={id + "-amount"} label={t("actualTransactionAmount")} hint={t("actualTransactionAmountHint")} required>
-              <Input id={id + "-amount"} type="number" inputMode="numeric" min="1" max="2147483647" step="1" required
+              <MoneyInput id={id + "-amount"} required
                 aria-describedby={id + "-amount-hint"} value={amount} onChange={(event) => setAmount(event.target.value)} />
-              {validAmount && <p className="break-words text-sm font-medium tabular-nums">{formatCurrency(actualAmount)}</p>}
             </Field>
             {chooseScheduledDate && <Field id={id + "-scheduled"} label={t("scheduledDate")} hint={t("scheduledDateHint")} required>
               <Input id={id + "-scheduled"} type="date" min="1900-01-01" max="2100-12-31" required

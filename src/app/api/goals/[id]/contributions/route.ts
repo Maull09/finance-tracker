@@ -1,3 +1,4 @@
+import { sumMoney } from "@/lib/money"
 import { asc, eq, sql } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 
@@ -5,7 +6,7 @@ import { accounts, goalContributions, goals } from "@/db/schema"
 import { getToday, isDate } from "@/lib/finance"
 import { authenticatedResponse } from "@/lib/server/authenticated-response"
 import { FinanceError } from "@/lib/finance-errors"
-import { integerInput, recordInput, textInput } from "@/lib/planning-validation"
+import { integerInput, moneyInput, recordInput, textInput } from "@/lib/planning-validation"
 import { accountSummaryQuery, readReservedCash } from "@/lib/server/financial-queries"
 
 type RouteContext = { params: Promise<{ id: string }> }
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   return authenticatedResponse(async (db) => {
     const goalId = integerInput((await params).id, 1, 2_147_483_647)
     const body = recordInput(await request.json())
-    const amount = integerInput(body.amount, 1, 2_147_483_647)
+    const amount = moneyInput(body.amount)
     const accountId = integerInput(body.accountId, 1, 2_147_483_647)
     const date = body.date ?? getToday()
     if (!isDate(date) || date > getToday())
@@ -53,17 +54,16 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         .from(goalContributions)
         .where(eq(goalContributions.goalId, goalId))
       const progress =
-        goal.currentAmount +
-        contributions.amount
-      if (progress + amount > goal.targetAmount)
+        sumMoney([goal.currentAmount, contributions.amount])
+      if (sumMoney([progress, amount]) > goal.targetAmount)
         throw new FinanceError("goalTargetExceeded", 409)
       const [summary] = await accountSummaryQuery(connection, [accountId])
       const reservations = await readReservedCash(connection, [accountId])
       const cash = summary.balance
       if (
         Math.round(cash * 100) -
-          (reservations.reserved.get(accountId) ?? 0) * 100 <
-        amount * 100
+          Math.round((reservations.reserved.get(accountId) ?? 0) * 100) <
+        Math.round(amount * 100)
       )
         throw new FinanceError("insufficientAvailableCash", 409)
       const [contribution] = await connection

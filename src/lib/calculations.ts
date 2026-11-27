@@ -1,5 +1,6 @@
 import { getNextMonthStart, type Locale } from "./finance"
 import { messages } from "./i18n"
+import { sumMoney } from "./money"
 
 export type LedgerTransaction = {
   type: "income" | "expense" | "transfer"
@@ -37,7 +38,7 @@ export function calculateBudgetCarryover(
   previousSpent: number,
   enabled: boolean,
 ) {
-  return enabled ? Math.max(previousBudget - previousSpent, 0) : 0
+  return enabled ? Math.max(sumMoney([previousBudget, -previousSpent]), 0) : 0
 }
 
 export function calculateForecast(
@@ -47,11 +48,9 @@ export function calculateForecast(
     amount: number
   }>,
 ) {
-  return transactions.reduce((balance, transaction) => {
-    if (transaction.type === "income") return balance + transaction.amount
-    if (transaction.type === "expense") return balance - transaction.amount
-    return balance
-  }, currentBalance)
+  return sumMoney([currentBalance, ...transactions.map((transaction) =>
+    transaction.type === "income" ? transaction.amount : transaction.type === "expense" ? -transaction.amount : 0,
+  )])
 }
 
 export function getPreviousPeriod(month: string) {

@@ -1,3 +1,4 @@
+import { sumMoney } from "@/lib/money"
 import { NextRequest, NextResponse } from "next/server"
 import { goalContributions, goals } from "@/db/schema"
 import { eq } from "drizzle-orm"
@@ -23,8 +24,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         .from(goalContributions)
         .where(eq(goalContributions.goalId, id))
       const progress =
-        goal.currentAmount +
-        contributions.reduce((total, item) => total + item.amount, 0)
+        sumMoney([goal.currentAmount, ...contributions.map((item) => item.amount)])
       if (input.targetAmount < progress)
         throw new FinanceError("amountBelowRecorded", 409)
       const [updated] = await connection

@@ -1,3 +1,4 @@
+import { sumMoney } from "@/lib/money"
 import { asc, eq, sql } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server"
 
@@ -5,7 +6,7 @@ import { accounts, debtPayments, debts, transactions } from "@/db/schema"
 import { getToday, isDate } from "@/lib/finance"
 import { authenticatedResponse } from "@/lib/server/authenticated-response"
 import { FinanceError } from "@/lib/finance-errors"
-import { integerInput, recordInput, textInput } from "@/lib/planning-validation"
+import { integerInput, moneyInput, recordInput, textInput } from "@/lib/planning-validation"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   return authenticatedResponse(async (db) => {
     const debtId = integerInput((await params).id, 1, 2_147_483_647)
     const body = recordInput(await request.json())
-    const amount = integerInput(body.amount, 1, 2_147_483_647)
+    const amount = moneyInput(body.amount)
     const accountId = integerInput(body.accountId, 1, 2_147_483_647)
     const date = body.date ?? getToday()
     if (!isDate(date) || date > getToday())
@@ -54,7 +55,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         .from(debtPayments)
         .where(eq(debtPayments.debtId, debtId))
       const paidAmount = payments.amount
-      if (paidAmount + amount > debt.amount)
+      const totalPaid = sumMoney([paidAmount, amount])
+      if (totalPaid > debt.amount)
         throw new FinanceError("debtPaymentExceeded", 409)
       const [transaction] = await tx
         .insert(transactions)
@@ -81,7 +83,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
           transactionId: transaction.id,
         })
         .returning()
-      const isPaid = paidAmount + amount === debt.amount
+      const isPaid = totalPaid === debt.amount
       await tx
         .update(debts)
         .set({
