@@ -1,5 +1,6 @@
 import type { Account } from "./types"
 import type { Holding, StockTrade, StockPrice } from "./investments"
+import type { ValuedAccountsData } from "./valued-assets"
 
 export type CashAccount = Account & { balance: number; availableCash: number }
 export type PortfolioData = {
@@ -94,6 +95,7 @@ export type SimulationData = SimulationBalanceData & {
   }>
 }
 export type NetWorthData = {
+  valuedAssets: ValuedAccountsData
   cash: number
   investments: PortfolioData["totals"]
   liabilities: number

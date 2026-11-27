@@ -16,4 +16,6 @@ export const ownedTables = [
   "stock_watchlist",
   "sinking_funds",
   "sinking_fund_entries",
+  "valued_accounts",
+  "valued_account_balances",
 ]

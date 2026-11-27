@@ -16,6 +16,8 @@ import { recurringSchedulesQuery } from "@/lib/server/recurring-queries"
 import type { UserDatabase } from "@/lib/server/authenticated-response"
 import type { InsightContext } from "./insight-contract"
 import { healthInsightSummary } from "./financial-health"
+import { readValuedAssets } from "@/lib/server/valued-assets"
+import { sumMoney } from "@/lib/money"
 
 type Connection = UserDatabase
 function periodEnd(month: string) {
@@ -109,9 +111,10 @@ export async function readInsightSummary(connection: Connection, context: Insigh
       overdueIncompleteCount: reservations.funds.filter((fund) => fund.targetDate < today && (allocations.get(fund.id) ?? 0) < fund.targetAmount).length }
   }
   if (page === "netWorth") {
-    const [cash, portfolio, debt] = await Promise.all([cashSummary(connection), portfolioSummary(connection), debtSummary(connection)])
-    return { ...cash, portfolio, ...debt, knownNetWorth: cash.cash + portfolio.knownMarketValue + debt.receivables - debt.liabilities,
-      netWorth: portfolio.unpricedCount ? null : cash.cash + portfolio.knownMarketValue + debt.receivables - debt.liabilities }
+    const [cash, portfolio, debt, valued] = await Promise.all([cashSummary(connection), portfolioSummary(connection), debtSummary(connection), readValuedAssets(connection)])
+    const knownNetWorth = sumMoney([cash.cash, portfolio.knownMarketValue, debt.receivables, valued.totals.knownValue, -debt.liabilities])
+    return { ...cash, portfolio, ...debt, valuedAssets: valued.totals, knownNetWorth,
+      netWorth: portfolio.unpricedCount || valued.totals.unpricedCount ? null : knownNetWorth }
   }
   if (page === "calendar") {
     const from = context.month + "-01", to = periodEnd(context.month)
@@ -132,7 +135,7 @@ export async function readInsightSummary(connection: Connection, context: Insigh
     const cashflow = simulateCashflow(balance.currentBalance, schedules, today, input.endDate, named(input.extraIncomes), named(input.extraExpenses))
     return { endDate: input.endDate, forecastOnly: true,
       ...projectNetWorth(cashflow, balance),
-      netWorthAssumption: "Gross worth uses the purchase cost of stocks still held, including buy fees. Net worth uses stock market value. Both keep stock costs, market values, receivables and liabilities fixed; only cash changes. Missing market prices make only net worth incomplete." }
+      netWorthAssumption: "Known gross worth uses stock purchase costs plus valued gold and foreign currency. Net worth uses market prices. Asset values and obligations stay fixed; only IDR cash changes. Missing gold or currency rates are excluded from known gross worth and make net worth incomplete. Price changes are not transaction income." }
   }
   if (page === "planning") {
     const [ledger, schedules] = await Promise.all([readBalanceLedger(connection), recurringSchedulesQuery(connection)])

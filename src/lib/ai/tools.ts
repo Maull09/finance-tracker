@@ -10,11 +10,12 @@ import { getCurrentMonth, getNextMonthStart, isDate } from "@/lib/finance"
 import { accountSummaryQuery, debtSummaryQuery, goalSummaryQuery } from "@/lib/server/financial-queries"
 import { userDatabase } from "./server"
 import { aiDraftSchema, type AiDraftInput } from "./validation"
+import { readValuedAssets } from "@/lib/server/valued-assets"
 
 export function financeTools(userId: string, drafts: AiDraftInput[]) {
   const overview = tool(async ({ month }) => userDatabase(userId, async (connection) => {
     const period = month ?? getCurrentMonth()
-    const [balances, totals, limits, goals, debts] = await Promise.all([
+    const [balances, totals, limits, goals, debts, valued] = await Promise.all([
       accountSummaryQuery(connection).limit(100),
       connection.select({
         type: transactions.type, category: transactions.category,
@@ -27,6 +28,7 @@ export function financeTools(userId: string, drafts: AiDraftInput[]) {
         .from(budgets).where(eq(budgets.periodStart, period + "-01")).limit(100),
       goalSummaryQuery(connection).limit(100),
       debtSummaryQuery(connection).limit(100),
+      readValuedAssets(connection),
     ])
     return JSON.stringify({
       month: period, currency: "IDR", maximumRowsPerSection: 100,
@@ -34,6 +36,8 @@ export function financeTools(userId: string, drafts: AiDraftInput[]) {
       transactionTotals: totals, budgets: limits,
       goals: goals.map(({ title, targetAmount, currentAmount, targetDate }) => ({ title, targetAmount, currentAmount, targetDate })),
       debts: debts.map(({ type, name, amount, paidAmount, remaining, dueDate }) => ({ type, name, amount, paidAmount, remaining, dueDate })),
+      valuedAssets: { totals: valued.totals, spendableInIdr: false,
+        balances: valued.accounts.slice(0, 100).map(({ name, symbol, quantity, marketValue, rate }) => ({ name, symbol, quantity, idrValue: marketValue, priceDate: rate?.date ?? null })) },
     })
   }), {
     name: "read_financial_overview",

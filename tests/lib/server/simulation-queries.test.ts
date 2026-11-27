@@ -2,14 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { readSimulationBalance } from "@/lib/server/simulation-queries"
 import type { ReadConnection } from "@/lib/server/ledger"
 
-const mocks = vi.hoisted(() => ({ ledger: vi.fn(), debts: vi.fn(), prices: vi.fn(), from: vi.fn() }))
+const mocks = vi.hoisted(() => ({ ledger: vi.fn(), debts: vi.fn(), prices: vi.fn(), from: vi.fn(), valued: vi.fn() }))
 vi.mock("@/lib/server/financial-queries", () => ({ readBalanceLedger: mocks.ledger, debtSummaryQuery: mocks.debts }))
 vi.mock("@/lib/server/market-queries", () => ({ readLatestPrices: mocks.prices }))
+vi.mock("@/lib/server/valued-assets", () => ({ readValuedAssets: mocks.valued }))
 const connection = { select: () => ({ from: mocks.from }) } as unknown as ReadConnection
 
 describe("calculator balance sheet", () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    mocks.valued.mockResolvedValue({ accounts: [], totals: { knownValue: 0, unpricedCount: 0 } })
     mocks.ledger.mockResolvedValue({ cashBalance: 10000000 })
     mocks.debts.mockResolvedValue([
       { type: "utang", remaining: 4000000 },
@@ -25,6 +27,15 @@ describe("calculator balance sheet", () => {
     expect(mocks.ledger).toHaveBeenCalledWith(connection)
     expect(mocks.debts).toHaveBeenCalledWith(connection)
     expect(mocks.prices).toHaveBeenCalledWith(connection, ["BBCA"])
+  })
+  it("values gold and foreign currency without adding them to spendable IDR cash", async () => {
+    mocks.valued.mockResolvedValue({ accounts: [], totals: { knownValue: 3000000.25, unpricedCount: 0 } })
+    expect(await readSimulationBalance(connection)).toEqual({ currentBalance: 10000000,
+      grossWorth: 15900000.25, knownNetWorth: 12000000.25, netWorth: 12000000.25 })
+  })
+  it("marks net worth incomplete when a native balance has no reference rate", async () => {
+    mocks.valued.mockResolvedValue({ accounts: [], totals: { knownValue: 0, unpricedCount: 1 } })
+    expect(await readSimulationBalance(connection)).toMatchObject({ knownNetWorth: 9000000, netWorth: null })
   })
   it("keeps stock purchase costs in gross worth when market prices are missing", async () => {
     mocks.prices.mockResolvedValue([])

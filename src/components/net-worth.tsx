@@ -1,6 +1,7 @@
 "use client"
 
 import { PageInsights } from "./page-insights"
+import { AssetRateAttribution } from "./asset-rate-attribution"
 import { useLanguage } from "./language-provider"
 import { AddAccountForm } from "./accounts-form"
 import { EmptyState, ErrorNotice, LoadingState, PageHeading } from "./feedback"
@@ -67,6 +68,8 @@ export function NetWorth() {
                   {[
                     ["cashAssets", data.cash],
                     ["stockAssets", data.investments.knownMarketValue],
+                    ["goldAssets", data.valuedAssets.totals.gold],
+                    ["foreignCurrencyAssets", data.valuedAssets.totals.foreignCurrency],
                     ["receivableAssets", data.receivables],
                     ["debtLiabilities", -data.liabilities],
                   ].map(([key, value]) => (
@@ -123,8 +126,12 @@ export function NetWorth() {
                       </span>
                     </li>
                   ))}
+                  {data.valuedAssets.accounts.map((account) => <li key={"valued-" + account.id} className="flex flex-wrap justify-between gap-2 py-3 text-sm">
+                    <span>{account.name} ({account.symbol === "XAU" ? t("goldBalance") : account.symbol})</span>
+                    <span className="font-semibold tabular-nums">{account.marketValue === null ? t("unpriced") : formatCurrency(account.marketValue)}</span>
+                  </li>)}
                 </ul>
-                {data.accounts.length === 0 && (
+                {data.accounts.length === 0 && data.valuedAssets.accounts.length === 0 && (
                   <EmptyState
                     title={t("noAccounts")}
                     description={t("accountHelp")}
@@ -167,6 +174,7 @@ export function NetWorth() {
           </>
         )
       )}
+      <AssetRateAttribution />
     </div>
   )
 }

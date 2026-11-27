@@ -5,15 +5,17 @@ import { authenticatedResponse } from "@/lib/server/authenticated-response"
 import { readBalanceLedger, readReservedCash, debtSummaryQuery } from "@/lib/server/financial-queries"
 import { readLatestPrices } from "@/lib/server/market-queries"
 import { sumMoney } from "@/lib/money"
+import { readValuedAssets } from "@/lib/server/valued-assets"
 
 export async function GET(request: Request) {
   return authenticatedResponse(async (db) => {
-    const [ledger, reservations, debtRows, trades] =
+    const [ledger, reservations, debtRows, trades, valued] =
       await Promise.all([
         readBalanceLedger(db),
         readReservedCash(db),
         debtSummaryQuery(db),
         db.select().from(stockTrades),
+        readValuedAssets(db),
       ])
     const prices = await readLatestPrices(db, trades.map((trade) => trade.symbol))
     const holdings = calculateHoldings(trades, prices)
@@ -34,7 +36,7 @@ export async function GET(request: Request) {
       0,
     )
     const knownNetWorth =
-      sumMoney([ledger.cashBalance, investments.knownMarketValue, receivables, -liabilities])
+      sumMoney([ledger.cashBalance, investments.knownMarketValue, receivables, valued.totals.knownValue, -liabilities])
     return NextResponse.json({
       cash: ledger.cashBalance,
       investments,
@@ -43,7 +45,8 @@ export async function GET(request: Request) {
       reservedCash,
       availableCash: sumMoney([ledger.cashBalance, -reservedCash]),
       knownNetWorth,
-      netWorth: investments.unpricedCount ? null : knownNetWorth,
+      netWorth: investments.unpricedCount || valued.totals.unpricedCount ? null : knownNetWorth,
+      valuedAssets: valued,
       accounts: ledger.summaries,
       holdings,
       debts: balances,

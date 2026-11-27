@@ -1,6 +1,7 @@
 "use client"
 
 import { MoneyInput } from "./money-input"
+import { AssetRateAttribution } from "./asset-rate-attribution"
 import { parseMoneyInput } from "@/lib/money-input"
 
 import { useState } from "react"
@@ -38,6 +39,7 @@ export function FinancialHealth() {
       <ErrorNotice message={records.error} onRetry={reload} />
       {records.refreshing && <p role="status" className="text-sm text-muted-foreground">{t("refreshing")}</p>}
       {records.loading ? <LoadingState /> : records.data && <HealthAnalysis key={month} snapshot={records.data} refreshing={records.refreshing || Boolean(records.error)} />}
+      <AssetRateAttribution />
     </div>
   )
 }

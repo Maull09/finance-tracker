@@ -1,6 +1,7 @@
 "use client"
 
 import { MoneyInput } from "./money-input"
+import { AssetRateAttribution } from "./asset-rate-attribution"
 import { parseTransactionAmount } from "@/lib/transaction-amount"
 
 import { PageInsights } from "./page-insights"
@@ -527,6 +528,7 @@ export function FinancialSimulation() {
           </div>
         </section>
       )}
+      <AssetRateAttribution />
     </div>
   )
 }

@@ -28,6 +28,49 @@ import {
 import { desc, sql } from "drizzle-orm"
 import type { AiDraftInput } from "@/lib/ai/validation"
 
+export const valuedAccounts = pgTable("valued_accounts", {
+  userId: uuid("user_id").notNull().default(sql`nullif(current_setting('app.user_id', true), '')::uuid`),
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  symbol: text("symbol").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  privateAccessPolicy(), ownerPolicy("valued_accounts"),
+  index("valued_accounts_user_id_idx").on(table.userId),
+  check("valued_accounts_symbol_check", sql`${table.symbol} in ('XAU','USD','SGD','EUR','JPY','MYR','SAR')`),
+]).enableRLS()
+
+export const valuedAccountBalances = pgTable("valued_account_balances", {
+  userId: uuid("user_id").notNull().default(sql`nullif(current_setting('app.user_id', true), '')::uuid`),
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull().references(() => valuedAccounts.id, { onDelete: "cascade" }),
+  quantity: numeric("quantity", { precision: 16, scale: 6, mode: "number" }).notNull(),
+  date: date("date").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  privateAccessPolicy(), ownerPolicy("valued_account_balances", [["account_id", "valued_accounts"]]),
+  index("valued_balances_user_account_date_idx").on(table.userId, table.accountId, desc(table.date), desc(table.id)),
+  check("valued_balances_quantity_check", sql`${table.quantity} >= 0 and ${table.quantity} <= 1000000`),
+]).enableRLS()
+
+export const assetRates = pgTable("asset_rates", {
+  id: serial("id").primaryKey(),
+  symbol: text("symbol").notNull(),
+  idrRate: numeric("idr_rate", { precision: 20, scale: 8, mode: "number" }).notNull(),
+  date: date("date").notNull(),
+  observedAt: timestamp("observed_at", { withTimezone: true }).notNull(),
+  oldestInputAt: timestamp("oldest_input_at", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  source: text("source").notNull(),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  marketReadPolicy(), marketInsertPolicy(), marketUpdatePolicy(),
+  uniqueIndex("asset_rates_symbol_date_idx").on(table.symbol, table.date),
+  check("asset_rates_symbol_check", sql`${table.symbol} in ('XAU','USD','SGD','EUR','JPY','MYR','SAR')`),
+  check("asset_rates_positive_check", sql`${table.idrRate} > 0 and ${table.idrRate} <= 100000000`),
+]).enableRLS()
+
 export const aiConversations = pgTable("ai_conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").notNull().default(sql`nullif(current_setting('app.user_id', true), '')::uuid`),
