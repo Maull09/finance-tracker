@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs"
 import pg from "pg"
 import { drizzle } from "drizzle-orm/node-postgres"
 import { and, eq, isNotNull, isNull } from "drizzle-orm"
-import { accounts, aiDrafts, budgets, debtPayments, debts, goalContributions, goals, transactions, recurringTransactions, reconciliations, sinkingFundEntries, sinkingFunds, stockTrades } from "@/db/schema"
+import { accounts, aiDrafts, assetRates, budgets, debtPayments, debts, goalContributions, goals, transactions, recurringTransactions, reconciliations, sinkingFundEntries, sinkingFunds, stockTrades, valuedAccountBalances, valuedAccounts } from "@/db/schema"
 import { decideDraft } from "@/lib/ai/confirmation"
 import { readLedger, readReservations } from "@/lib/server/ledger"
 import { readBalanceLedger, readReservedCash, accountSummaryQuery, goalSummaryQuery, debtSummaryQuery } from "@/lib/server/financial-queries"
@@ -25,6 +25,8 @@ import { recordRecurringOccurrence } from "@/lib/server/recurring-recording"
 import { scheduleOccurrences } from "@/lib/planning"
 import { parseTransactionInput } from "@/lib/validation"
 import { readFinancialHealth } from "@/lib/server/financial-health-queries"
+import { readValuedAssets, readValuedAccountHistory } from "@/lib/server/valued-assets"
+import { readSimulationBalance } from "@/lib/server/simulation-queries"
 
 const testUrl = process.env.AUTH_TEST_DATABASE_URL
 const redisTestUrl = process.env.REDIS_TEST_URL
@@ -124,7 +126,7 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
   it("applies migrations without losing legacy amounts or watchlist notes", async () => {
     expect((await client.query("SELECT initial_balance::float8 AS initial_balance, user_id FROM accounts WHERE id = $1", [legacyId])).rows[0]).toEqual({ initial_balance: 12345, user_id: null })
     expect((await client.query("SELECT note FROM stock_watchlist")).rows[0].note).toBe("Legacy note")
-    expect(schemaIssues(loadSnapshot("0018"), await readDatabaseSchema(client))).toEqual([])
+    expect(schemaIssues(loadSnapshot("0020"), await readDatabaseSchema(client))).toEqual([])
     expect(moneyMigrationPreserved).toEqual(Array(8).fill(true))
     expect((await client.query("SELECT actual_balance::float8 AS actual_balance, user_id FROM reconciliations WHERE id=$1", [legacyReconciliationId])).rows[0])
       .toEqual({ actual_balance: 12345, user_id: null })
@@ -132,6 +134,100 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
       .toEqual({ last_executed_date: "2026-09-30", recorded_through_date: "2026-09-30" })
     expect((await client.query("SELECT amount::float8 AS amount, recurring_id, scheduled_date FROM transactions WHERE id=$1", [legacyTransactionId])).rows[0])
       .toEqual({ amount: 5000, recurring_id: null, scheduled_date: null })
+  })
+
+  it("values native assets by dated balances and rates without changing IDR cash or transaction income", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] })
+    vi.setSystemTime(new Date("2026-11-27T10:00:00Z"))
+    try {
+      await asUser(userA, async () => {
+        await client.query("SAVEPOINT valued_fixture")
+        try {
+          const connection = drizzle(client)
+          const cashBefore = (await readBalanceLedger(connection)).cashBalance
+          const transactionsBefore = await connection.select().from(transactions)
+          const [gold] = await connection.insert(valuedAccounts).values({ name: "Gold", symbol: "XAU" }).returning()
+          const [usd] = await connection.insert(valuedAccounts).values({ name: "USD", symbol: "USD" }).returning()
+          await connection.insert(valuedAccountBalances).values([
+            { accountId: gold.id, quantity: 1, date: "2026-10-01" },
+            { accountId: gold.id, quantity: 2, date: "2026-11-27" },
+            { accountId: usd.id, quantity: 100.25, date: "2026-10-01" },
+          ])
+          const rate = (symbol, idrRate, date) => ({ symbol, idrRate, date, source: "Fixture",
+            observedAt: new Date(date + "T00:00:00Z"), oldestInputAt: new Date(date + "T00:00:00Z"), expiresAt: new Date(date + "T23:59:59Z") })
+          await connection.insert(assetRates).values([
+            rate("XAU", 1600000, "2026-10-01"), rate("USD", 16000, "2026-10-01"),
+            rate("XAU", 2000000, "2026-11-27"), rate("USD", 17000, "2026-11-27"),
+          ])
+          const historical = await readValuedAssets(connection, "2026-10-15")
+          expect(historical.accounts.find((row) => row.id === gold.id)).toMatchObject({ quantity: 1, marketValue: 1600000 })
+          expect(historical.totals.knownValue).toBe(3204000)
+          expect((await readValuedAssets(connection, "2026-09-30")).accounts).toEqual([])
+          const current = await readValuedAssets(connection)
+          expect(current.accounts.find((row) => row.id === gold.id)).toMatchObject({ quantity: 2, marketValue: 4000000 })
+          expect(current.accounts.find((row) => row.id === usd.id)).toMatchObject({ quantity: 100.25, marketValue: 1704250 })
+          expect(current.totals).toMatchObject({ knownValue: 5704250, foreignCurrency: 1704250, unpricedCount: 0 })
+          expect(await readValuedAccountHistory(connection, gold.id)).toHaveLength(2)
+          expect((await readBalanceLedger(connection)).cashBalance).toBe(cashBefore)
+          expect(await connection.select().from(transactions)).toEqual(transactionsBefore)
+          expect(await readSimulationBalance(connection)).toMatchObject({ currentBalance: cashBefore, knownNetWorth: cashBefore + 5704250, netWorth: cashBefore + 5704250 })
+          expect(await readFinancialHealth(connection, { month: "2026-11", essentialExpense: 100, monthlyDebtPayment: 0 }))
+            .toMatchObject({ totalAssets: cashBefore + 5704250, liquidAssets: cashBefore + 1704250, unpricedHoldings: 0 })
+          const [yen] = await connection.insert(valuedAccounts).values({ name: "JPY", symbol: "JPY" }).returning()
+          await connection.insert(valuedAccountBalances).values({ accountId: yen.id, quantity: 1000, date: "2026-11-27" })
+          expect((await readValuedAssets(connection)).totals).toMatchObject({ knownValue: 5704250, marketValue: null, unpricedCount: 1 })
+          expect((await readSimulationBalance(connection)).netWorth).toBeNull()
+          expect((await readFinancialHealth(connection, { month: "2026-11", essentialExpense: 100, monthlyDebtPayment: 0 })).totalAssets).toBeNull()
+          await connection.insert(valuedAccountBalances).values({ accountId: yen.id, quantity: 0, date: "2026-11-27" })
+          expect((await readValuedAssets(connection)).totals.unpricedCount).toBe(0)
+          expect((await readValuedAssets(connection)).accounts.find((row) => row.id === yen.id).marketValue).toBe(0)
+          const [baht] = await connection.insert(valuedAccounts).values({ name: "Thai baht", symbol: "THB" }).returning()
+          await connection.insert(valuedAccountBalances).values({ accountId: baht.id, quantity: 100.25, date: "2026-11-27" })
+          await connection.insert(assetRates).values(rate("THB", 500, "2026-11-27"))
+          expect((await readValuedAssets(connection)).accounts.find((row) => row.id === baht.id))
+            .toMatchObject({ quantity: 100.25, marketValue: 50125 })
+          expect((await readValuedAssets(connection)).totals.knownValue).toBe(5754375)
+          expect((await readSimulationBalance(connection)).knownNetWorth).toBe(cashBefore + 5754375)
+          expect((await readFinancialHealth(connection, { month: "2026-11", essentialExpense: 100, monthlyDebtPayment: 0 })).liquidAssets)
+            .toBe(cashBefore + 1754375)
+          expect((await readBalanceLedger(connection)).cashBalance).toBe(cashBefore)
+          expect(await connection.select().from(transactions)).toEqual(transactionsBefore)
+        } finally { await client.query("ROLLBACK TO SAVEPOINT valued_fixture") }
+      })
+    } finally { vi.useRealTimers() }
+  })
+
+  it("isolates native asset accounts, quantities and cache revisions between users", async () => {
+    const revision = async (owner) => (await client.query("SELECT revision::text FROM api_cache_revisions WHERE scope=$1", [owner])).rows[0]?.revision
+    const beforeA = await revision(userA)
+    const beforeB = await revision(userB)
+    const saved = (await asUser(userA, () => client.query("INSERT INTO valued_accounts(name,symbol) VALUES ('Private gold','XAU') RETURNING id"))).rows[0]
+    try {
+      const accountRevision = await revision(userA)
+      expect(accountRevision).not.toBe(beforeA)
+      expect(await revision(userB)).toBe(beforeB)
+      await asUser(userA, () => client.query("INSERT INTO valued_account_balances(account_id,quantity,date) VALUES ($1,1.234567,'2026-11-27')", [saved.id]))
+      expect(await revision(userA)).not.toBe(accountRevision)
+      expect(await revision(userB)).toBe(beforeB)
+      expect((await asUser(userB, () => client.query("SELECT id FROM valued_accounts WHERE id=$1", [saved.id]))).rows).toEqual([])
+      expect((await asUser(userB, () => client.query("SELECT id FROM valued_account_balances WHERE account_id=$1", [saved.id]))).rows).toEqual([])
+      await expect(asUser(userB, () => client.query("INSERT INTO valued_account_balances(account_id,quantity,date) VALUES ($1,1,'2026-11-27')", [saved.id])))
+        .rejects.toMatchObject({ code: "42501" })
+      expect((await asUser(userB, () => client.query("DELETE FROM valued_accounts WHERE id=$1", [saved.id]))).rowCount).toBe(0)
+    } finally { await asUser(userA, () => client.query("DELETE FROM valued_accounts WHERE id=$1", [saved.id])) }
+    expect((await client.query("SELECT id FROM valued_account_balances WHERE account_id=$1", [saved.id])).rows).toEqual([])
+  })
+
+  it("invalidates shared valuation caches when reference rates change", async () => {
+    const before = (await client.query("SELECT revision::text FROM api_cache_revisions WHERE scope='market'")).rows[0]?.revision
+    await asUser(userA, async () => {
+      await client.query("SAVEPOINT asset_rate_cache_fixture")
+      try {
+        await client.query("INSERT INTO asset_rates(symbol,idr_rate,date,observed_at,oldest_input_at,expires_at,source) VALUES ('SAR',4000,'2026-01-01','2026-01-01','2026-01-01','2026-01-02','Fixture')")
+        const after = (await client.query("SELECT revision::text FROM api_cache_revisions WHERE scope='market'")).rows[0]?.revision
+        expect(after).not.toBe(before)
+      } finally { await client.query("ROLLBACK TO SAVEPOINT asset_rate_cache_fixture") }
+    })
   })
 
   it("preserves decimal transaction amounts through edits, transfers, balances, budgets and reports", async () => {

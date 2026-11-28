@@ -7,11 +7,12 @@ import { formatCurrency } from "@/lib/finance"
 
 const mocks = vi.hoisted(() => ({ request: vi.fn(), locale: "id" as "en" | "id" }))
 vi.mock("@/lib/client-api", async (original) => ({ ...await original<object>(), requestJson: mocks.request }))
-vi.mock("@/lib/use-remote-data", () => ({ useRemoteData: () => ({
-  data: [{ id: 1, name: "Mandiri", type: "bank", balance: 1031225.23, initialBalance: 1031000 }],
+vi.mock("@/lib/use-remote-data", () => ({ useRemoteData: (url: string) => ({
+  data: url === "/api/valued-accounts" ? { accounts: [], totals: { knownValue: 0, unpricedCount: 0, staleCount: 0 } } : [{ id: 1, name: "Mandiri", type: "bank", balance: 1031225.23, initialBalance: 1031000 }],
   loading: false, error: "", reload: vi.fn(),
 }) }))
 vi.mock("@/components/language-provider", () => ({ useLanguage: () => ({
+  locale: mocks.locale,
   t: (key: string, values: Record<string, string> = {}) => Object.entries(values).reduce(
     (text, [name, value]) => text.replace("{" + name + "}", value), messages[mocks.locale][key] ?? key,
   ),

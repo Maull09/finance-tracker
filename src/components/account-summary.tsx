@@ -29,8 +29,13 @@ import { useRemoteData } from "@/lib/use-remote-data"
 import { getToday } from "@/lib/finance"
 import { parseMoneyInput } from "@/lib/money-input"
 import type { AccountSummary as Summary } from "@/lib/types"
+import { ValuedAccounts } from "./valued-accounts"
 
 export function AccountSummary() {
+  return <div className="space-y-8"><CashAccounts /><ValuedAccounts /></div>
+}
+
+function CashAccounts() {
   const { t, formatCurrency } = useLanguage()
   const records = useRemoteData<Summary[]>("/api/accounts/summary")
   if (records.error && !records.data)

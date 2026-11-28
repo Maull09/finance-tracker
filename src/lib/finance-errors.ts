@@ -20,6 +20,8 @@ export const financeErrorCodes = [
   "fundTargetExceeded",
   "linkedFundTransaction",
   "marketDataUnavailable",
+  "assetRatesUnavailable",
+  "invalidAssetRate",
   "priceAccessRequired",
   "pricesRateLimited",
   "invalidMarketPrice",

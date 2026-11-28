@@ -1,5 +1,6 @@
 import { and, lte, sql } from "drizzle-orm"
 import { sumMoney } from "@/lib/money"
+import { readValuedAssets } from "./valued-assets"
 import { recurringTransactions, stockPrices, stockTrades } from "@/db/schema"
 import { calculateFinancialHealth, healthPeriod, type HealthInput, type HealthMonth } from "@/lib/financial-health"
 import { calculateHoldings, investmentTotals } from "@/lib/investments"
@@ -21,7 +22,7 @@ type HealthLedger = {
 
 export async function readFinancialHealth(connection: UserDatabase, input: HealthInput) {
   const period = healthPeriod(input.month)
-  const [result, trades, schedules] = await Promise.all([
+  const [result, trades, schedules, valued] = await Promise.all([
     connection.execute<{ ledger: HealthLedger }>(sql`
       with monthly_categories as (
         select to_char(t.date, 'YYYY-MM') as month, t.type, t.category,
@@ -83,6 +84,7 @@ export async function readFinancialHealth(connection: UserDatabase, input: Healt
     `),
     connection.select().from(stockTrades).where(lte(stockTrades.date, period.asOf)),
     connection.select().from(recurringTransactions).where(lte(recurringTransactions.startDate, period.asOf)),
+    readValuedAssets(connection, period.asOf),
   ])
   const symbols = [...new Set(trades.map((trade) => trade.symbol))]
   const prices = symbols.length ? await connection.selectDistinctOn([stockPrices.symbol]).from(stockPrices)
@@ -97,18 +99,19 @@ export async function readFinancialHealth(connection: UserDatabase, input: Healt
     .flatMap((schedule) => scheduleOccurrences({ ...schedule, recordedThroughDate: null }, period.start, period.asOf))
     .reduce((sum, row) => sumMoney([sum, row.amount]), 0)
   const priceDates = holdings.filter((holding) => holding.shares > 0 && holding.priceDate !== null)
-    .map((holding) => holding.priceDate!).sort()
+    .map((holding) => holding.priceDate!)
+    .concat(valued.accounts.filter((account) => account.quantity > 0 && account.rate).map((account) => account.rate!.date)).sort()
   return calculateFinancialHealth({
     month: input.month,
     asOf: period.asOf,
     partial: input.month === getCurrentMonth(),
     months: ledger.months,
-    liquidAssets: ledger.liquidAssets,
-    totalAssets: investments.unpricedCount ? null : sumMoney([ledger.cashAssets, investments.knownMarketValue, ledger.receivables]),
+    liquidAssets: sumMoney([ledger.liquidAssets, valued.totals.foreignCurrency]),
+    totalAssets: investments.unpricedCount || valued.totals.unpricedCount ? null : sumMoney([ledger.cashAssets, investments.knownMarketValue, ledger.receivables, valued.totals.knownValue]),
     totalLiabilities: sumMoney([ledger.liabilities, ledger.overdrafts]),
     recordedDebtPayments: ledger.recordedDebtPayments,
     recurringExpense,
-    unpricedHoldings: investments.unpricedCount,
+    unpricedHoldings: investments.unpricedCount + valued.totals.unpricedCount,
     oldestPriceDate: priceDates[0] ?? null,
   }, input)
 }

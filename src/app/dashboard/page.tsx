@@ -21,6 +21,7 @@ import {
   ArrowRight,
 } from "lucide-react"
 import { AccountSummary } from "@/components/account-summary"
+import { AssetRateUpdater } from "@/components/asset-rate-updater"
 import { BudgetManager } from "@/components/budget-manager"
 import { DebtManager } from "@/components/debt-manager"
 import { GoalsManager } from "@/components/goals-manager"
@@ -91,6 +92,7 @@ export default function FinanceTracker() {
   }, [])
   return (
     <div className="flex min-h-dvh bg-background text-foreground">
+      <AssetRateUpdater />
       <a
         href="#main-content"
         onClick={(event) => {
