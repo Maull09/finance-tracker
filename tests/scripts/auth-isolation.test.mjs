@@ -126,7 +126,7 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
   it("applies migrations without losing legacy amounts or watchlist notes", async () => {
     expect((await client.query("SELECT initial_balance::float8 AS initial_balance, user_id FROM accounts WHERE id = $1", [legacyId])).rows[0]).toEqual({ initial_balance: 12345, user_id: null })
     expect((await client.query("SELECT note FROM stock_watchlist")).rows[0].note).toBe("Legacy note")
-    expect(schemaIssues(loadSnapshot("0019"), await readDatabaseSchema(client))).toEqual([])
+    expect(schemaIssues(loadSnapshot("0020"), await readDatabaseSchema(client))).toEqual([])
     expect(moneyMigrationPreserved).toEqual(Array(8).fill(true))
     expect((await client.query("SELECT actual_balance::float8 AS actual_balance, user_id FROM reconciliations WHERE id=$1", [legacyReconciliationId])).rows[0])
       .toEqual({ actual_balance: 12345, user_id: null })
@@ -181,6 +181,17 @@ describe.skipIf(!testUrl)("PostgreSQL ownership policies", () => {
           await connection.insert(valuedAccountBalances).values({ accountId: yen.id, quantity: 0, date: "2026-11-27" })
           expect((await readValuedAssets(connection)).totals.unpricedCount).toBe(0)
           expect((await readValuedAssets(connection)).accounts.find((row) => row.id === yen.id).marketValue).toBe(0)
+          const [baht] = await connection.insert(valuedAccounts).values({ name: "Thai baht", symbol: "THB" }).returning()
+          await connection.insert(valuedAccountBalances).values({ accountId: baht.id, quantity: 100.25, date: "2026-11-27" })
+          await connection.insert(assetRates).values(rate("THB", 500, "2026-11-27"))
+          expect((await readValuedAssets(connection)).accounts.find((row) => row.id === baht.id))
+            .toMatchObject({ quantity: 100.25, marketValue: 50125 })
+          expect((await readValuedAssets(connection)).totals.knownValue).toBe(5754375)
+          expect((await readSimulationBalance(connection)).knownNetWorth).toBe(cashBefore + 5754375)
+          expect((await readFinancialHealth(connection, { month: "2026-11", essentialExpense: 100, monthlyDebtPayment: 0 })).liquidAssets)
+            .toBe(cashBefore + 1754375)
+          expect((await readBalanceLedger(connection)).cashBalance).toBe(cashBefore)
+          expect(await connection.select().from(transactions)).toEqual(transactionsBefore)
         } finally { await client.query("ROLLBACK TO SAVEPOINT valued_fixture") }
       })
     } finally { vi.useRealTimers() }

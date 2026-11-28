@@ -38,7 +38,7 @@ export const valuedAccounts = pgTable("valued_accounts", {
 }, (table) => [
   privateAccessPolicy(), ownerPolicy("valued_accounts"),
   index("valued_accounts_user_id_idx").on(table.userId),
-  check("valued_accounts_symbol_check", sql`${table.symbol} in ('XAU','USD','SGD','EUR','JPY','MYR','SAR')`),
+  check("valued_accounts_symbol_check", sql`${table.symbol} in ('XAU','USD','SGD','EUR','JPY','MYR','SAR','THB')`),
 ]).enableRLS()
 
 export const valuedAccountBalances = pgTable("valued_account_balances", {
@@ -67,7 +67,7 @@ export const assetRates = pgTable("asset_rates", {
 }, (table) => [
   marketReadPolicy(), marketInsertPolicy(), marketUpdatePolicy(),
   uniqueIndex("asset_rates_symbol_date_idx").on(table.symbol, table.date),
-  check("asset_rates_symbol_check", sql`${table.symbol} in ('XAU','USD','SGD','EUR','JPY','MYR','SAR')`),
+  check("asset_rates_symbol_check", sql`${table.symbol} in ('XAU','USD','SGD','EUR','JPY','MYR','SAR','THB')`),
   check("asset_rates_positive_check", sql`${table.idrRate} > 0 and ${table.idrRate} <= 100000000`),
 ]).enableRLS()
 

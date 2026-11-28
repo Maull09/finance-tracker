@@ -141,6 +141,13 @@
       "when": 1795790257861,
       "tag": "0019_gold_foreign_currency_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1795793606060,
+      "tag": "0020_thai_baht",
+      "breakpoints": true
     }
   ]
 }

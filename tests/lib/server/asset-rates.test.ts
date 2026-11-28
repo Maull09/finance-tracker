@@ -6,7 +6,7 @@ import { refreshAssetRates } from "@/lib/server/asset-rates"
 const now = new Date("2026-11-27T10:00:00Z")
 const fx = { result: "success", base_code: "USD", time_last_update_unix: Date.parse("2026-11-27T00:00:00Z") / 1000,
   time_next_update_unix: Date.parse("2026-11-28T00:00:00Z") / 1000,
-  rates: { USD: 1, IDR: 16000, SGD: 1.25, EUR: 0.8, JPY: 160, MYR: 4, SAR: 4 } }
+  rates: { USD: 1, IDR: 16000, SGD: 1.25, EUR: 0.8, JPY: 160, MYR: 4, SAR: 4, THB: 32 } }
 const gold = { symbol: "XAU", currency: "USD", price: 3110.34768, updatedAt: "2026-11-27T09:00:00Z" }
 const state = { owned: [] as Array<{ symbol: string }>, latest: [] as ReturnType<typeof parseExchangeRates>,
   values: vi.fn(), conflict: vi.fn(), returning: vi.fn(), fetch: vi.fn() }
@@ -28,7 +28,7 @@ describe("reference price refresh", () => {
   })
   afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals() })
   it("fetches only fixed public endpoints and persists all FX references plus gram gold", async () => {
-    expect(await refreshAssetRates(connection)).toMatchObject({ updated: 7, failures: [] })
+    expect(await refreshAssetRates(connection)).toMatchObject({ updated: 8, failures: [] })
     expect(state.fetch.mock.calls.map(([url]) => url)).toEqual(["https://open.er-api.com/v6/latest/USD", "https://api.gold-api.com/price/XAU"])
     expect(state.values).toHaveBeenCalledWith(expect.objectContaining({ symbol: "XAU", idrRate: 1600000 }))
     expect(state.conflict).toHaveBeenCalledWith(expect.objectContaining({ setWhere: expect.anything() }))
@@ -51,8 +51,15 @@ describe("reference price refresh", () => {
   })
   it("fetches a missing currency even when USD is already cached", async () => {
     state.owned = [{ symbol: "SGD" }]; state.latest = [parseExchangeRates(fx, now)[0]]
-    expect(await refreshAssetRates(connection)).toMatchObject({ updated: 6, failures: [] })
+    expect(await refreshAssetRates(connection)).toMatchObject({ updated: 7, failures: [] })
     expect(state.fetch.mock.calls[0][0]).toContain("open.er-api.com")
+  })
+  it("fetches THB when older cached FX quotes omit it", async () => {
+    state.owned = [{ symbol: "THB" }]
+    state.latest = parseExchangeRates(fx, now).filter((quote) => quote.symbol !== "THB")
+    expect(await refreshAssetRates(connection)).toMatchObject({ updated: 7, failures: [] })
+    expect(state.fetch).toHaveBeenCalledOnce()
+    expect(state.values).toHaveBeenCalledWith(expect.objectContaining({ symbol: "THB", idrRate: 500 }))
   })
   it("preserves existing quotes when upstream responds with invalid data", async () => {
     state.fetch.mockResolvedValue(Response.json({ result: "success", base_code: "EUR" }))

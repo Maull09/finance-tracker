@@ -5,7 +5,7 @@ import { foreignCurrencies, gramsPerTroyOunce, type AssetRate, type AssetSymbol 
 const positive = z.number().finite().positive().max(1_000_000_000)
 const exchangeSchema = z.object({ result: z.literal("success"), base_code: z.literal("USD"),
   time_last_update_unix: z.number().int().positive(), time_next_update_unix: z.number().int().positive(),
-  rates: z.object({ USD: z.literal(1), IDR: positive, SGD: positive, EUR: positive, JPY: positive, MYR: positive, SAR: positive }),
+  rates: z.object({ USD: z.literal(1), IDR: positive, SGD: positive, EUR: positive, JPY: positive, MYR: positive, SAR: positive, THB: positive }),
 })
 const goldSchema = z.object({ symbol: z.literal("XAU"), currency: z.literal("USD"), price: positive,
   updatedAt: z.iso.datetime({ offset: true }),

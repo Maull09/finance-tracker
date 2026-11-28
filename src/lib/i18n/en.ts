@@ -208,7 +208,7 @@ export const en = {
   assetRatesUnavailable: "Gold or currency reference prices are temporarily unavailable. Saved prices and native balances were kept. Try again later.",
   invalidAssetRate: "The provider returned a reference price or date that could not be used. Saved prices and native balances were kept.",
   noValuedAccounts: "No gold or foreign-currency balances",
-  valuedAccountStartHint: "Add pure-gold grams or a balance in USD, SGD, EUR, JPY, MYR or SAR.",
+  valuedAccountStartHint: "Add pure-gold grams or a balance in USD, SGD, EUR, JPY, MYR, SAR or THB.",
   assetReferenceHint: "Reference values can differ from physical-gold selling prices and bank exchange rates. Gold is checked every 15 minutes while this dashboard is open; exchange rates follow the provider's daily update. These balances contribute to assets, not spendable IDR cash.",
   assetBalanceHistory: "Balance history",
   assetBalanceHistoryHint: "The 50 latest quantity snapshots. Market-price changes do not change these amounts.",

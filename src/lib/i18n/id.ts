@@ -210,7 +210,7 @@ export const id: Record<keyof typeof en, string> = {
   assetRatesUnavailable: "Harga acuan emas atau valas sementara tidak tersedia. Harga tersimpan dan jumlah asli tetap dipertahankan. Coba lagi nanti.",
   invalidAssetRate: "Penyedia mengirim harga atau tanggal acuan yang tidak dapat digunakan. Harga tersimpan dan jumlah asli tetap dipertahankan.",
   noValuedAccounts: "Belum ada saldo emas atau valas",
-  valuedAccountStartHint: "Tambahkan gram emas murni atau saldo USD, SGD, EUR, JPY, MYR, maupun SAR.",
+  valuedAccountStartHint: "Tambahkan gram emas murni atau saldo USD, SGD, EUR, JPY, MYR, SAR, maupun THB.",
   assetReferenceHint: "Nilai acuan dapat berbeda dari harga jual emas fisik dan kurs bank. Emas diperiksa tiap 15 menit selama dashboard terbuka; kurs mengikuti pembaruan harian penyedia. Saldo ini masuk aset, bukan kas IDR yang siap dibelanjakan.",
   assetBalanceHistory: "Riwayat saldo",
   assetBalanceHistoryHint: "50 catatan jumlah terbaru. Perubahan harga pasar tidak mengubah jumlah ini.",

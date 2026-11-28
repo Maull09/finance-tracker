@@ -3,7 +3,7 @@ import { getToday, isDate, type Locale } from "./finance"
 import { recordInput, textInput } from "./planning-validation"
 import { sumMoney } from "./money"
 
-export const foreignCurrencies = ["USD", "SGD", "EUR", "JPY", "MYR", "SAR"] as const
+export const foreignCurrencies = ["USD", "SGD", "EUR", "JPY", "MYR", "SAR", "THB"] as const
 export const assetSymbols = ["XAU", ...foreignCurrencies] as const
 export type AssetSymbol = typeof assetSymbols[number]
 export const gramsPerTroyOunce = 31.1034768

@@ -52,6 +52,17 @@ describe("gold and foreign-currency accounts", () => {
     expect(state.request.mock.calls[0][0]).toBe("/api/valued-accounts")
     expect(JSON.parse(state.request.mock.calls[0][1].body)).toMatchObject({ symbol: "XAU", quantity: "1,234567", date: "2026-11-27" })
   })
+  it.each(["id", "en"] as const)("shows and saves a fractional Thai baht balance in %s", async (locale) => {
+    state.locale = locale
+    state.remote.mockReturnValue({ data: { accounts: [{ ...usd, name: "Thai baht", symbol: "THB", marketValue: 50125,
+      rate: { ...usd.rate, symbol: "THB", idrRate: 500 } }], totals: { knownValue: 50125, unpricedCount: 0, staleCount: 0 } }, loading: false, error: "", reload: vi.fn() })
+    state.request.mockResolvedValue({ id: 1 })
+    const dialog = await open("editAssetBalance")
+    expect(container.textContent).toContain("THB")
+    expect(container.textContent).toContain(formatCurrency(50125, locale))
+    await fill(dialog, "quantity", "1000,79"); await submit(dialog)
+    expect(JSON.parse(state.request.mock.calls[0][1].body)).toMatchObject({ symbol: "THB", quantity: "1000,79" })
+  })
   it("appends a fractional FX balance and retains it after failure", async () => {
     state.request.mockRejectedValue(new Error("serviceUnavailable"))
     const dialog = await open("editAssetBalance"); const input = await fill(dialog, "quantity", "200,75"); await submit(dialog)

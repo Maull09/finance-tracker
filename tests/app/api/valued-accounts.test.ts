@@ -35,10 +35,10 @@ describe("native asset account API", () => {
     expect(state.values.mock.calls).toEqual([[{ name: "Gold", symbol: "XAU", description: "" }], [{ accountId: 1, quantity: 1.234567, date: "2026-11-27" }]])
     expect(state.transaction).toHaveBeenCalledOnce()
   })
-  it.each([{ ...input, symbol: "USD", quantity: "0,01" }, { ...input, symbol: "JPY", quantity: "100" }, { ...input, quantity: 0 }])("accepts supported native balances: %s", async (body) => {
+  it.each([{ ...input, symbol: "USD", quantity: "0,01" }, { ...input, symbol: "JPY", quantity: "100" }, { ...input, symbol: "THB", quantity: "100,25" }, { ...input, quantity: 0 }])("accepts supported native balances: %s", async (body) => {
     expect((await POST(request(body))).status).toBe(201)
   })
-  it.each([null, [], { ...input, symbol: "BTC" }, { ...input, quantity: "1.2345678" }, { ...input, symbol: "JPY", quantity: "1.5" }, { ...input, quantity: -1 }, { ...input, date: "2099-01-01" }])("rejects invalid native records before writing: %s", async (body) => {
+  it.each([null, [], { ...input, symbol: "BTC" }, { ...input, quantity: "1.2345678" }, { ...input, symbol: "JPY", quantity: "1.5" }, { ...input, symbol: "THB", quantity: "100.251" }, { ...input, quantity: -1 }, { ...input, date: "2099-01-01" }])("rejects invalid native records before writing: %s", async (body) => {
     expect((await POST(request(body))).status).toBe(400)
     expect(state.insert).not.toHaveBeenCalled()
   })

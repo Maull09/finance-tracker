@@ -1,10 +1,10 @@
 # Gold and foreign-currency balances
 
-Apply migration `0019_gold_foreign_currency_accounts` with the backed-up workflow in [database migrations](database-migrations.md) before serving this feature. No new dependency, API key or environment setting is required. The server needs outbound HTTPS access to `open.er-api.com` and `api.gold-api.com`.
+Apply migrations through `0020_thai_baht` (including `0019_gold_foreign_currency_accounts`) with the backed-up workflow in [database migrations](database-migrations.md) before serving this feature. Migration 0020 extends the account/rate symbol checks to include THB without rewriting balances or history. No new dependency, API key or environment setting is required. The server needs outbound HTTPS access to `open.er-api.com` and `api.gold-api.com`.
 
 ## Quantities and prices
 
-Accounts → Gold and foreign currency records original holdings: pure-gold grams (up to six decimals), USD, SGD, EUR, MYR and SAR (up to two decimals), or whole JPY. Comma/dot decimal input is accepted without thousands grouping. Quantities must be non-negative and are capped at 10,000 grams or 1,000,000 currency units. The asset symbol is immutable after creation; create a separate account for another currency.
+Accounts → Gold and foreign currency records original holdings: pure-gold grams (up to six decimals), USD, SGD, EUR, MYR, SAR and Thai baht (THB, up to two decimals), or whole JPY. Comma/dot decimal input is accepted without thousands grouping. Quantities must be non-negative and are capped at 10,000 grams or 1,000,000 currency units. The asset symbol is immutable after creation; create a separate account for another currency.
 
 Each save appends a dated quantity snapshot, including multiple corrections on the same day. The latest date and then latest snapshot ID determine the balance. No IDR transaction, income, expense or transfer is synthesized. Deleting a native account explicitly deletes its quantity history after confirmation.
 
